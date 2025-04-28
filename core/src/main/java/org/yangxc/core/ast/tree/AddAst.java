@@ -2,12 +2,12 @@ package org.yangxc.core.ast.tree;
 
 import org.yangxc.core.ast.AstVisitor;
 
-public class PlusAst implements Ast {
+public class AddAst implements Ast {
 
     private final Ast left;
     private final Ast right;
 
-    public PlusAst(Ast left, Ast right) {
+    public AddAst(Ast left, Ast right) {
         this.left = left;
         this.right = right;
     }

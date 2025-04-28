@@ -26,7 +26,7 @@ public class AstParse {
                 NumberAstPhase.getInstance(),
                 VariableAstPhase.getInstance(),
                 MultiplyAstPhase.getInstance(),
-                PlusAstPhase.getInstance()
+                AddAstPhase.getInstance()
         );
 
         public Build setParseFactory(Function<String, Parse> parseFactory) {

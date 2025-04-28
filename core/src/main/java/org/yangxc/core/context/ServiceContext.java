@@ -1,5 +1,6 @@
 package org.yangxc.core.context;
 
+import org.yangxc.core.annotation.OperatorService;
 import org.yangxc.core.ast.AstParse;
 
 import javax.lang.model.element.TypeElement;
@@ -11,6 +12,7 @@ public class ServiceContext {
     private final AstParse astParse;
     private final TypeElement typeElement;
     private List<FunctionContext> functionContexts;
+    public static final String TAB = "    ";
 
     public ServiceContext(TypeElement typeElement) {
         astParse = AstParse.DEFAULT;
@@ -31,9 +33,9 @@ public class ServiceContext {
         return typeElement;
     }
 
-    public void init() {
+    public void setup(OverloadingContext overloadingContext) {
         for (FunctionContext functionContext : functionContexts) {
-            functionContext.init(astParse);
+            functionContext.setup(astParse, overloadingContext);
         }
     }
 
@@ -47,11 +49,19 @@ public class ServiceContext {
     }
 
     public String getClassName() {
-        return typeElement.getSimpleName() + "Impl";
+        OperatorService operatorService = typeElement.getAnnotation(OperatorService.class);
+        if (operatorService == null || "".equals(operatorService.value())) {
+            return typeElement.getSimpleName() + "Impl";
+        }
+        return operatorService.value();
     }
 
     public String getQualifiedName() {
-        return typeElement.getQualifiedName() + "Impl";
+        String aPackage = getPackage();
+        if (aPackage == null) {
+            return getClassName();
+        }
+        return aPackage + "." + getClassName();
     }
 
     public String write() {
@@ -59,15 +69,16 @@ public class ServiceContext {
         pack = pack != null ? ("package " + pack + ";\n") : "";
         String imports = functionContexts.stream()
                 .flatMap(functionContext -> functionContext.getUseClasses().stream())
-                .filter(typeMirror -> !typeMirror.getKind().isPrimitive())
                 .distinct()
                 .sorted()
-                .map(typeMirror -> "import " + typeMirror + ";")
-                .collect(Collectors.joining("\n"));
-        String className = "public class " + getClassName() +" implements " + typeElement.getSimpleName() + "{\n";
+                .reduce(new StringBuilder(),
+                        (sb, type) -> sb.append("import ").append(type).append(";\n"),
+                        StringBuilder::append)
+                .toString();
+        String className = "public class " + getClassName() +" implements " + typeElement.getSimpleName() + " {\n";
         String methods = functionContexts.stream()
                 .map(FunctionContext::toMethod)
-                .map(s -> "\n@Override\n" + s)
+                .map(s -> "\n" + TAB + "@Override\n" + s)
                 .collect(Collectors.joining());
         return pack + "\n" + imports + "\n" + className + methods + "}";
     }

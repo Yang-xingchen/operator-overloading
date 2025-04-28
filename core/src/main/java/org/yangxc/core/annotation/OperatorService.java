@@ -8,4 +8,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 public @interface OperatorService {
+
+    /**
+     * 名称，默认为接口名+Impl
+     */
+    String value() default "";
+
 }

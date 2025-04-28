@@ -1,7 +1,7 @@
 package org.yangxc.core.ast.phase;
 
 import org.yangxc.core.ast.tree.Ast;
-import org.yangxc.core.ast.tree.PlusAst;
+import org.yangxc.core.ast.tree.AddAst;
 import org.yangxc.core.ast.tree.SubtractAst;
 import org.yangxc.core.ast.tree.Token;
 
@@ -10,15 +10,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class PlusAstPhase implements AstPhase {
+public class AddAstPhase implements AstPhase {
 
-    private static final PlusAstPhase INSTANCE = new PlusAstPhase();
+    private static final AddAstPhase INSTANCE = new AddAstPhase();
 
-    private PlusAstPhase() {
+    private AddAstPhase() {
 
     }
 
-    public static PlusAstPhase getInstance() {
+    public static AddAstPhase getInstance() {
         return INSTANCE;
     }
 
@@ -41,7 +41,7 @@ public class PlusAstPhase implements AstPhase {
                 continue;
             }
             if (tokens.get(point) == Token.PLUS) {
-                res[point + 1] = new PlusAst(res[point - 1], res[point + 1]);
+                res[point + 1] = new AddAst(res[point - 1], res[point + 1]);
             } else if (tokens.get(point) == Token.SUBTRACT) {
                 res[point + 1] = new SubtractAst(res[point - 1], res[point + 1]);
             }

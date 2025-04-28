@@ -2,6 +2,7 @@ package org.yangxc.core.processor;
 
 import org.yangxc.core.annotation.OperatorFunction;
 import org.yangxc.core.context.FunctionContext;
+import org.yangxc.core.context.OverloadingContext;
 import org.yangxc.core.context.ServiceContext;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -26,10 +27,12 @@ public class ServiceProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        List<ServiceContext> conetxts = getContexts(roundEnv);
-        conetxts.forEach(ServiceContext::init);
-        conetxts.forEach(this::write);
-        return !conetxts.isEmpty();
+        List<ServiceContext> contexts = getContexts(roundEnv);
+        // TODO
+        OverloadingContext overloadingContext = new OverloadingContext();
+        contexts.forEach(context -> context.setup(overloadingContext));
+        contexts.forEach(this::write);
+        return !contexts.isEmpty();
     }
 
     private List<ServiceContext> getContexts(RoundEnvironment roundEnv) {
