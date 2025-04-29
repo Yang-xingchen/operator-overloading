@@ -14,4 +14,9 @@ public @interface OperatorFunction {
      */
     String value();
 
+    /**
+     * 表达式, 定义变量
+     */
+    Statement[] statements() default {};
+
 }

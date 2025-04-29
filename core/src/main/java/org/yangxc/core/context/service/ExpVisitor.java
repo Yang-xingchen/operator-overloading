@@ -1,8 +1,11 @@
-package org.yangxc.core.context;
+package org.yangxc.core.context.service;
 
 import org.yangxc.core.ast.AstVisitor;
 import org.yangxc.core.ast.tree.*;
-import org.yangxc.core.constany.ClassName;
+import org.yangxc.core.constant.ClassName;
+import org.yangxc.core.context.overloading.ClassOverloadingContext;
+import org.yangxc.core.context.overloading.OperatorOverloadingContext;
+import org.yangxc.core.context.overloading.OverloadingContext;
 
 import java.util.Map;
 
@@ -15,13 +18,18 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
     public static class ExpContext {
 
-        private StringBuilder stringBuilder = new StringBuilder();
+        private StringBuilder stringBuilder;
         private OverloadingContext overloadingContext;
         private Map<String, VariableContext> varMap;
 
-        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> varMap) {
+        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, Map<String, VariableContext> varMap) {
+            this.stringBuilder = stringBuilder;
             this.overloadingContext = overloadingContext;
             this.varMap = varMap;
+        }
+
+        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> varMap) {
+            this(new StringBuilder(), overloadingContext, varMap);
         }
 
         public ExpContext append(String string) {

@@ -7,9 +7,9 @@
 使用示例: [Main.java](example/src/main/java/org/yangxc/example/Main.java)
 
 # TODO LIST
+- [ ] 支持变量类型转化
 - [ ] 自动化导入(消除`spi`使用)
 - [ ] 支持`(exp)`语法, 如: `(1+2)*3`
-- [ ] 支持定义本地变量
 - [ ] 支持自定义类的操作运算符重载
 - [ ] 支持变量调用方法
 - [ ] 支持条件分支

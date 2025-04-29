@@ -1,7 +1,9 @@
-package org.yangxc.core.context;
+package org.yangxc.core.context.service;
 
 import org.yangxc.core.annotation.OperatorService;
 import org.yangxc.core.ast.AstParse;
+import org.yangxc.core.context.overloading.OverloadingContext;
+import org.yangxc.core.exception.ElementException;
 
 import javax.lang.model.element.TypeElement;
 import java.util.List;
@@ -34,12 +36,18 @@ public class ServiceContext {
     }
 
     public void setup(OverloadingContext overloadingContext) {
-        for (FunctionContext functionContext : functionContexts) {
-            functionContext.setup(astParse, overloadingContext);
+        try {
+            for (FunctionContext functionContext : functionContexts) {
+                functionContext.setup(astParse, overloadingContext);
+            }
+        } catch (ElementException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new ElementException(e, typeElement);
         }
     }
 
-    public String getPackage() {
+    private String getPackage() {
         String qualifiedName = typeElement.getQualifiedName().toString();
         int i = qualifiedName.lastIndexOf('.');
         if (i == -1) {
@@ -48,7 +56,7 @@ public class ServiceContext {
         return qualifiedName.substring(0, i);
     }
 
-    public String getClassName() {
+    private String getClassName() {
         OperatorService operatorService = typeElement.getAnnotation(OperatorService.class);
         if (operatorService == null || "".equals(operatorService.value())) {
             return typeElement.getSimpleName() + "Impl";
@@ -65,22 +73,28 @@ public class ServiceContext {
     }
 
     public String write() {
-        String pack = getPackage();
-        pack = pack != null ? ("package " + pack + ";\n") : "";
-        String imports = functionContexts.stream()
-                .flatMap(functionContext -> functionContext.getUseClasses().stream())
-                .distinct()
-                .sorted()
-                .reduce(new StringBuilder(),
-                        (sb, type) -> sb.append("import ").append(type).append(";\n"),
-                        StringBuilder::append)
-                .toString();
-        String className = "public class " + getClassName() +" implements " + typeElement.getSimpleName() + " {\n";
-        String methods = functionContexts.stream()
-                .map(FunctionContext::toMethod)
-                .map(s -> "\n" + TAB + "@Override\n" + s)
-                .collect(Collectors.joining());
-        return pack + "\n" + imports + "\n" + className + methods + "}";
+        try {
+            String pack = getPackage();
+            pack = pack != null ? ("package " + pack + ";\n") : "";
+            String imports = functionContexts.stream()
+                    .flatMap(functionContext -> functionContext.getUseClasses().stream())
+                    .distinct()
+                    .sorted()
+                    .reduce(new StringBuilder(),
+                            (sb, type) -> sb.append("import ").append(type).append(";\n"),
+                            StringBuilder::append)
+                    .toString();
+            String className = "public class " + getClassName() +" implements " + typeElement.getSimpleName() + " {\n";
+            String methods = functionContexts.stream()
+                    .map(FunctionContext::toMethod)
+                    .map(s -> "\n" + TAB + "@Override\n" + s)
+                    .collect(Collectors.joining());
+            return pack + "\n" + imports + "\n" + className + methods + "}";
+        } catch (ElementException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new ElementException(e, typeElement);
+        }
     }
 
 }

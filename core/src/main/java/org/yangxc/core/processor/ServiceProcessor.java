@@ -1,9 +1,10 @@
 package org.yangxc.core.processor;
 
 import org.yangxc.core.annotation.OperatorFunction;
-import org.yangxc.core.context.FunctionContext;
-import org.yangxc.core.context.OverloadingContext;
-import org.yangxc.core.context.ServiceContext;
+import org.yangxc.core.context.service.FunctionContext;
+import org.yangxc.core.context.overloading.OverloadingContext;
+import org.yangxc.core.context.service.ServiceContext;
+import org.yangxc.core.exception.ElementException;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
@@ -30,42 +31,62 @@ public class ServiceProcessor extends AbstractProcessor {
         List<ServiceContext> contexts = getContexts(roundEnv);
         // TODO
         OverloadingContext overloadingContext = new OverloadingContext();
-        contexts.forEach(context -> context.setup(overloadingContext));
+        setup(contexts, overloadingContext);
         contexts.forEach(this::write);
         return !contexts.isEmpty();
+    }
+
+    private void setup(List<ServiceContext> contexts, OverloadingContext overloadingContext) {
+        for (ServiceContext context : contexts) {
+            try {
+                context.setup(overloadingContext);
+            } catch (ElementException e) {
+                processingEnv.getMessager().printError("setup error: " + e.getMessage(), e.getElement());
+            } catch (Exception e) {
+                processingEnv.getMessager().printError("setup error: " + e.getMessage(), context.getTypeElement());
+            }
+        }
     }
 
     private List<ServiceContext> getContexts(RoundEnvironment roundEnv) {
         List<ServiceContext> contexts = new ArrayList<>();
         for (Element rootElement : roundEnv.getRootElements()) {
-            if (rootElement.getKind() != ElementKind.INTERFACE) {
-                continue;
+            try {
+                if (rootElement.getKind() != ElementKind.INTERFACE) {
+                    continue;
+                }
+                ServiceContext context = new ServiceContext((TypeElement) rootElement);
+                List<FunctionContext> functionContexts = rootElement.getEnclosedElements()
+                        .stream()
+                        .filter(element -> element.getKind() == ElementKind.METHOD)
+                        .map(ExecutableElement.class::cast)
+                        .filter(executableElement -> !executableElement.isDefault())
+                        .filter(executableElement -> executableElement.getAnnotation(OperatorFunction.class) != null)
+                        .map(FunctionContext::new)
+                        .toList();
+                context.setFunctionContexts(functionContexts);
+                contexts.add(context);
+            } catch (ElementException e) {
+                processingEnv.getMessager().printError("init error: " + e.getMessage(), e.getElement());
+            } catch (Exception e) {
+                processingEnv.getMessager().printError("init error: " + e.getMessage(), rootElement);
             }
-            ServiceContext context = new ServiceContext((TypeElement) rootElement);
-            List<FunctionContext> functionContexts = rootElement.getEnclosedElements()
-                    .stream()
-                    .filter(element -> element.getKind() == ElementKind.METHOD)
-                    .map(ExecutableElement.class::cast)
-                    .filter(executableElement -> !executableElement.isDefault())
-                    .filter(executableElement -> executableElement.getAnnotation(OperatorFunction.class) != null)
-                    .map(FunctionContext::new)
-                    .toList();
-            context.setFunctionContexts(functionContexts);
-            contexts.add(context);
         }
         return contexts;
     }
 
     private void write(ServiceContext context) {
         try {
+            processingEnv.getMessager().printNote(context.write(), context.getTypeElement());
             JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(context.getQualifiedName());
             try (OutputStream outputStream = sourceFile.openOutputStream();
                  OutputStreamWriter writer = new OutputStreamWriter(outputStream)) {
                 writer.write(context.write());
             }
-            processingEnv.getMessager().printNote(context.write(), context.getTypeElement());
+        } catch (ElementException e) {
+            processingEnv.getMessager().printError("write error: " + e.getMessage(), e.getElement());
         } catch (Exception e) {
-            processingEnv.getMessager().printError("失败: " + e.getMessage(), context.getTypeElement());
+            processingEnv.getMessager().printError("write error: " + e.getMessage(), context.getTypeElement());
         }
     }
 
