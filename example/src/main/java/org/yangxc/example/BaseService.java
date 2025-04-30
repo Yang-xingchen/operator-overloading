@@ -1,5 +1,6 @@
 package org.yangxc.example;
 
+import org.yangxc.core.annotation.NumberType;
 import org.yangxc.core.annotation.OperatorFunction;
 import org.yangxc.core.annotation.OperatorService;
 import org.yangxc.core.annotation.Statement;
@@ -28,5 +29,7 @@ public interface BaseService {
     )
     double var();
 
+    @OperatorFunction(value = "123_456_789_123_456_789 % 1_000_000_000", numberType = NumberType.BIG_INTEGER)
+    long big();
 
 }

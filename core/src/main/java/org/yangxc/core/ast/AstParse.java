@@ -2,8 +2,8 @@ package org.yangxc.core.ast;
 
 import org.yangxc.core.ast.phase.*;
 import org.yangxc.core.ast.tree.Ast;
-import org.yangxc.core.parse.DefaultParse;
-import org.yangxc.core.parse.Parse;
+import org.yangxc.core.ast.tokenparse.DefaultTokenParse;
+import org.yangxc.core.ast.tokenparse.TokenParse;
 
 import java.util.List;
 import java.util.function.Function;
@@ -11,17 +11,17 @@ import java.util.function.Function;
 public class AstParse {
 
     public static final AstParse DEFAULT = new Build().build();
-    private final Function<String, Parse> parseFactory;
+    private final Function<String, TokenParse> parseFactory;
     private final List<AstPhase> phases;
 
-    private AstParse(Function<String, Parse> parseFactory, List<AstPhase> phases) {
+    private AstParse(Function<String, TokenParse> parseFactory, List<AstPhase> phases) {
         this.parseFactory = parseFactory;
         this.phases = phases;
     }
 
     public static class Build {
 
-        private Function<String, Parse> parseFactory = DefaultParse::new;
+        private Function<String, TokenParse> parseFactory = DefaultTokenParse::new;
         private List<AstPhase> phases = List.of(
                 NumberAstPhase.getInstance(),
                 VariableAstPhase.getInstance(),
@@ -29,7 +29,7 @@ public class AstParse {
                 AddAstPhase.getInstance()
         );
 
-        public Build setParseFactory(Function<String, Parse> parseFactory) {
+        public Build setParseFactory(Function<String, TokenParse> parseFactory) {
             this.parseFactory = parseFactory;
             return this;
         }
@@ -49,8 +49,8 @@ public class AstParse {
         return parse(parseFactory.apply(expression));
     }
 
-    public Ast parse(Parse parse) {
-        List<Ast> tokens = parse.tokens().stream().map(Ast.class::cast).toList();
+    public Ast parse(TokenParse tokenParse) {
+        List<Ast> tokens = tokenParse.tokens().stream().map(Ast.class::cast).toList();
         for (AstPhase phase : phases) {
             while (true) {
                 AstPhase.Result result = phase.handle(tokens);

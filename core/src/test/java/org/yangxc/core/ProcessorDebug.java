@@ -15,25 +15,19 @@ import java.util.Locale;
 public class ProcessorDebug {
 
     public static void main(String[] args) throws Exception {
-        // 基础
+        // 代码
         String baseCode = """
                 import org.yangxc.core.annotation.OperatorFunction;
                 import org.yangxc.core.annotation.OperatorService;
                 import org.yangxc.core.annotation.Statement;
-                
-                import java.math.BigDecimal;
+                import org.yangxc.core.annotation.NumberType;
                 
                 @OperatorService
                 public interface BaseService {
                 
-                    @OperatorFunction(
-                            statements = {
-                                    @Statement(type = BigDecimal.class, varName = "a", exp = "1*2"),
-                                    @Statement(type = BigDecimal.class, varName = "b", exp = "1*2")
-                            },
-                            value = "a+b"
-                    )
-                    BigDecimal var();
+
+                    @OperatorFunction(value = "123_456_789_123_456_789 % 1_000_000_000", numberType = NumberType.BIG_INTEGER)
+                    long big();
                 
                 }
                 """;
@@ -42,6 +36,8 @@ public class ProcessorDebug {
 
         // 清除编译结果
         Files.delete(Paths.get("BaseService.class"));
+        Files.delete(Paths.get("BaseServiceImpl.java"));
+        Files.delete(Paths.get("BaseServiceImpl.class"));
     }
 
     private static void compile(String code, Processor processor) throws IOException {

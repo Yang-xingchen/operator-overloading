@@ -1,16 +1,20 @@
-package org.yangxc.core.context.service;
+package org.yangxc.core.handle.service;
 
+import org.yangxc.core.annotation.NumberType;
 import org.yangxc.core.ast.AstParse;
 import org.yangxc.core.ast.tree.Ast;
-import org.yangxc.core.context.overloading.OverloadingContext;
+import org.yangxc.core.constant.ClassName;
+import org.yangxc.core.handle.overloading.CastContext;
+import org.yangxc.core.handle.overloading.OverloadingContext;
 import org.yangxc.core.exception.ElementException;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import java.util.Map;
 
-public class StatementContext {
+public class StatementHandle {
 
     private final int index;
 
@@ -20,18 +24,20 @@ public class StatementContext {
     private String varName;
     private ExecutableElement expElement;
     private String exp;
+    private ExecutableElement numberTypeElement;
+    private NumberType numberType;
 
     private Ast ast;
     private OverloadingContext overloadingContext;
     private Map<String, VariableContext> variableContexts;
 
-    public StatementContext(AnnotationMirror annotationMirror, int index) {
+    public StatementHandle(AnnotationMirror annotationMirror, int index) {
         this.index = index;
         annotationMirror.getElementValues().forEach((executableElement, annotationValue) -> {
             String name = executableElement.getSimpleName().toString();
             if ("type".equals(name)) {
                 typeElement = executableElement;
-                type = annotationValue.accept(new DefaultAnnotationValueVisitor<>() {
+                type = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
                     @Override
                     public TypeMirror visitType(TypeMirror t, Object o) {
                         return t;
@@ -39,7 +45,7 @@ public class StatementContext {
                 }, null);
             } else if ("varName".equals(name)) {
                 varNameElement = executableElement;
-                varName = annotationValue.accept(new DefaultAnnotationValueVisitor<>() {
+                varName = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
                     @Override
                     public String visitString(String s, Object o) {
                         return s;
@@ -47,21 +53,31 @@ public class StatementContext {
                 }, null);
             } else if ("exp".equals(name)) {
                 expElement = executableElement;
-                exp = annotationValue.accept(new DefaultAnnotationValueVisitor<>() {
+                exp = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
                     @Override
                     public String visitString(String s, Object o) {
                         return s;
                     }
                 }, null);
+            } else if ("numberType".equals(name)) {
+                numberTypeElement = executableElement;
+                numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                    @Override
+                    public NumberType visitEnumConstant(VariableElement c, Object object) {
+                        return NumberType.valueOf(c.getSimpleName().toString());
+                    }
+                }, null);
             }
         });
+        numberType = numberType != null ? numberType : NumberType.INHERIT;
     }
 
     public TypeMirror getType() {
         return type;
     }
 
-    public void setup(AstParse astParse, OverloadingContext overloadingContext, Map<String, VariableContext> variableContexts) {
+    public void setup(AstParse astParse, OverloadingContext overloadingContext, Map<String, VariableContext> variableContexts, NumberType numberType) {
+        this.numberType = this.numberType != NumberType.INHERIT ? this.numberType : numberType;
         this.overloadingContext = overloadingContext;
         this.variableContexts = variableContexts;
         try {
@@ -75,16 +91,20 @@ public class StatementContext {
     }
 
     public String write() {
-        String type = this.type.toString();
+        String type;
+        String simpleType;
+        try {
+            type = this.type.toString();
+            simpleType = ClassName.getSimpleName(type);
+        } catch (ElementException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new ElementException(e, typeElement);
+        }
         StringBuilder stringBuilder = new StringBuilder();
         try {
-            if (!this.type.getKind().isPrimitive()) {
-                int i = type.lastIndexOf(".");
-                stringBuilder.append(i == -1 ? type : type.substring(i + 1));
-            } else {
-                stringBuilder.append(type);
-            }
             stringBuilder
+                    .append(simpleType)
                     .append(" ")
                     .append(varName)
                     .append(" = ");
@@ -96,7 +116,7 @@ public class StatementContext {
         ExpVisitor.ExpContext expContext;
         ExpVisitor.ExpResult result;
         try {
-            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContexts);
+            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContexts, numberType);
             result = ast.accept(ExpVisitor.INSTANCE, expContext);
         } catch (ElementException e) {
             throw e;
@@ -107,24 +127,18 @@ public class StatementContext {
             if (type.equals(result.getType())) {
                 return expContext.append(";\n").toString();
             }
-            if (this.type.getKind().isPrimitive()) {
-                switch (this.type.getKind()) {
-                    case BYTE -> expContext.append(".").append(result.getOverloadingContext().getToByte().name()).append("()");
-                    case SHORT -> expContext.append(".").append(result.getOverloadingContext().getToShort().name()).append("()");
-                    case INT -> expContext.append(".").append(result.getOverloadingContext().getToInt().name()).append("()");
-                    case LONG -> expContext.append(".").append(result.getOverloadingContext().getToLong().name()).append("()");
-                    case FLOAT -> expContext.append(".").append(result.getOverloadingContext().getToFloat().name()).append("()");
-                    case DOUBLE -> expContext.append(".").append(result.getOverloadingContext().getToDouble().name()).append("()");
-                    default -> throw new ElementException("未知转换: " + this.type.toString(), typeElement);
-                }
-                return expContext.append(";\n").toString();
-            }
+            CastContext cast = result.cast(type);
+            return switch (cast.type()) {
+                case CAST -> "(" + simpleType + ")" + expContext + ";\n";
+                case NEW -> "new " + simpleType + "(" + expContext + ");\n";
+                case METHOD -> expContext.append(".").append(cast.name()).append("()'\n").toString();
+                case STATIC_METHOD -> cast.name() + "(" + expContext + ");\n";
+            };
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
             throw new ElementException(e, typeElement);
         }
-        throw new ElementException("未知转换: " + this.type.toString(), typeElement);
     }
 
 

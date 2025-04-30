@@ -12,4 +12,9 @@ public @interface Statement {
 
     String exp();
 
+    /**
+     * 数字类型
+     */
+    NumberType numberType() default NumberType.INHERIT;
+
 }

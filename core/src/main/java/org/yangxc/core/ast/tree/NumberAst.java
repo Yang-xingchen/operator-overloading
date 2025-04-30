@@ -33,6 +33,12 @@ public class NumberAst implements Ast {
         return visitor.visit(this, t);
     }
 
+    public String value() {
+        String res = (sign != null ? sign.getValue() : "") +
+                integer.getValue() + (decimal != null ? ("." + decimal.getValue()) : "");
+        return res.replace("_", "");
+    }
+
     @Override
     public String toString() {
         if (sign != null) {

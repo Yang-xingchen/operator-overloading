@@ -26,7 +26,7 @@ public class Token implements Ast {
     }
 
     public boolean isDigit() {
-        return value.chars().allMatch(Character::isDigit);
+        return value.chars().allMatch(codePoint -> Character.isDigit(codePoint) || codePoint == '_');
     }
 
     public boolean isVariable() {

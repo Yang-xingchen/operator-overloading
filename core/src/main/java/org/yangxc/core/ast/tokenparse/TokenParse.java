@@ -1,11 +1,11 @@
-package org.yangxc.core.parse;
+package org.yangxc.core.ast.tokenparse;
 
 import org.yangxc.core.ast.tree.Token;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public interface Parse {
+public interface TokenParse {
 
     boolean hasNext();
 

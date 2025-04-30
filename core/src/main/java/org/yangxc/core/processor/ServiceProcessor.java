@@ -1,9 +1,9 @@
 package org.yangxc.core.processor;
 
 import org.yangxc.core.annotation.OperatorFunction;
-import org.yangxc.core.context.service.FunctionContext;
-import org.yangxc.core.context.overloading.OverloadingContext;
-import org.yangxc.core.context.service.ServiceContext;
+import org.yangxc.core.handle.service.FunctionHandle;
+import org.yangxc.core.handle.overloading.OverloadingContext;
+import org.yangxc.core.handle.service.ServiceHandle;
 import org.yangxc.core.exception.ElementException;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -28,7 +28,7 @@ public class ServiceProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        List<ServiceContext> contexts = getContexts(roundEnv);
+        List<ServiceHandle> contexts = getContexts(roundEnv);
         // TODO
         OverloadingContext overloadingContext = new OverloadingContext();
         setup(contexts, overloadingContext);
@@ -36,8 +36,8 @@ public class ServiceProcessor extends AbstractProcessor {
         return !contexts.isEmpty();
     }
 
-    private void setup(List<ServiceContext> contexts, OverloadingContext overloadingContext) {
-        for (ServiceContext context : contexts) {
+    private void setup(List<ServiceHandle> contexts, OverloadingContext overloadingContext) {
+        for (ServiceHandle context : contexts) {
             try {
                 context.setup(overloadingContext);
             } catch (ElementException e) {
@@ -48,23 +48,23 @@ public class ServiceProcessor extends AbstractProcessor {
         }
     }
 
-    private List<ServiceContext> getContexts(RoundEnvironment roundEnv) {
-        List<ServiceContext> contexts = new ArrayList<>();
+    private List<ServiceHandle> getContexts(RoundEnvironment roundEnv) {
+        List<ServiceHandle> contexts = new ArrayList<>();
         for (Element rootElement : roundEnv.getRootElements()) {
             try {
                 if (rootElement.getKind() != ElementKind.INTERFACE) {
                     continue;
                 }
-                ServiceContext context = new ServiceContext((TypeElement) rootElement);
-                List<FunctionContext> functionContexts = rootElement.getEnclosedElements()
+                ServiceHandle context = new ServiceHandle((TypeElement) rootElement);
+                List<FunctionHandle> functionHandles = rootElement.getEnclosedElements()
                         .stream()
                         .filter(element -> element.getKind() == ElementKind.METHOD)
                         .map(ExecutableElement.class::cast)
                         .filter(executableElement -> !executableElement.isDefault())
                         .filter(executableElement -> executableElement.getAnnotation(OperatorFunction.class) != null)
-                        .map(FunctionContext::new)
+                        .map(FunctionHandle::new)
                         .toList();
-                context.setFunctionContexts(functionContexts);
+                context.setFunctionContexts(functionHandles);
                 contexts.add(context);
             } catch (ElementException e) {
                 processingEnv.getMessager().printError("init error: " + e.getMessage(), e.getElement());
@@ -75,7 +75,7 @@ public class ServiceProcessor extends AbstractProcessor {
         return contexts;
     }
 
-    private void write(ServiceContext context) {
+    private void write(ServiceHandle context) {
         try {
             processingEnv.getMessager().printNote(context.write(), context.getTypeElement());
             JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(context.getQualifiedName());

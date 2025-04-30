@@ -1,6 +1,6 @@
-package org.yangxc.core.context.overloading;
+package org.yangxc.core.handle.overloading;
 
-import org.yangxc.core.constant.ClassName;
+import org.yangxc.core.constant.ClassOverloading;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,8 +10,7 @@ public class OverloadingContext {
     private final Map<String, ClassOverloadingContext> map;
 
     public OverloadingContext() {
-        map = new HashMap<>();
-        map.put(ClassName.BIG_DECIMAL, ClassOverloadingContext.BIG_DECIMAL_CONTEXT);
+        map = new HashMap<>(ClassOverloading.DEFAULT_CLASS_OVERLOADING);
     }
 
     public ClassOverloadingContext get(String type) {

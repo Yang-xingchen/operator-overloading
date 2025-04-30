@@ -14,4 +14,9 @@ public @interface OperatorService {
      */
     String value() default "";
 
+    /**
+     * 数字类型
+     */
+    NumberType numberType() default NumberType.INHERIT;
+
 }

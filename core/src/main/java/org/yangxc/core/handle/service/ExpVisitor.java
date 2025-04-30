@@ -1,11 +1,13 @@
-package org.yangxc.core.context.service;
+package org.yangxc.core.handle.service;
 
+import org.yangxc.core.annotation.NumberType;
 import org.yangxc.core.ast.AstVisitor;
 import org.yangxc.core.ast.tree.*;
 import org.yangxc.core.constant.ClassName;
-import org.yangxc.core.context.overloading.ClassOverloadingContext;
-import org.yangxc.core.context.overloading.OperatorOverloadingContext;
-import org.yangxc.core.context.overloading.OverloadingContext;
+import org.yangxc.core.handle.overloading.CastContext;
+import org.yangxc.core.handle.overloading.ClassOverloadingContext;
+import org.yangxc.core.handle.overloading.OperatorOverloadingContext;
+import org.yangxc.core.handle.overloading.OverloadingContext;
 
 import java.util.Map;
 
@@ -18,18 +20,20 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
     public static class ExpContext {
 
-        private StringBuilder stringBuilder;
-        private OverloadingContext overloadingContext;
-        private Map<String, VariableContext> varMap;
+        private final StringBuilder stringBuilder;
+        private final OverloadingContext overloadingContext;
+        private final Map<String, VariableContext> varMap;
+        private final NumberType numberType;
 
-        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, Map<String, VariableContext> varMap) {
+        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, Map<String, VariableContext> varMap, NumberType numberType) {
             this.stringBuilder = stringBuilder;
             this.overloadingContext = overloadingContext;
             this.varMap = varMap;
+            this.numberType = numberType;
         }
 
-        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> varMap) {
-            this(new StringBuilder(), overloadingContext, varMap);
+        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> varMap, NumberType numberType) {
+            this(new StringBuilder(), overloadingContext, varMap, numberType);
         }
 
         public ExpContext append(String string) {
@@ -61,8 +65,8 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             return type;
         }
 
-        public ClassOverloadingContext getOverloadingContext() {
-            return overloadingContext;
+        public CastContext cast(String toTypeName) {
+            return overloadingContext.cast(toTypeName);
         }
 
     }
@@ -75,14 +79,24 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
     @Override
     public ExpResult visit(NumberAst ast, ExpContext expContext) {
-        expContext.append("new BigDecimal(\"").append(ast.toString()).append("\")");
-        return expContext.createResult(ClassName.BIG_DECIMAL);
+        if (expContext.numberType == NumberType.BIG_DECIMAL) {
+            expContext.append("new BigDecimal(\"").append(ast.value()).append("\")");
+            return expContext.createResult(ClassName.BIG_DECIMAL);
+        }
+        if (expContext.numberType == NumberType.BIG_INTEGER) {
+            if (ast.getDecimal() != null) {
+                throw new UnsupportedOperationException("can't convert [" + ast + "] to BigInteger");
+            }
+            expContext.append("new BigInteger(\"").append(ast.value()).append("\")");
+            return expContext.createResult(ClassName.BIG_INTEGER);
+        }
+        throw new UnsupportedOperationException("unknown numberType convert[" + expContext.numberType + "]");
     }
 
     @Override
     public ExpResult visit(AddAst ast, ExpContext expContext) {
         ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.getOverloadingContext().getAdd();
+        OperatorOverloadingContext overloading = res.overloadingContext.getAdd();
         expContext.append(".").append(overloading.name()).append("(");
         ast.getRight().accept(this, expContext);
         expContext.append(")");
@@ -92,7 +106,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
     @Override
     public ExpResult visit(SubtractAst ast, ExpContext expContext) {
         ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.getOverloadingContext().getSubtract();
+        OperatorOverloadingContext overloading = res.overloadingContext.getSubtract();
         expContext.append(".").append(overloading.name()).append("(");
         ast.getRight().accept(this, expContext);
         expContext.append(")");
@@ -102,7 +116,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
     @Override
     public ExpResult visit(MultiplyAst ast, ExpContext expContext) {
         ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.getOverloadingContext().getMultiply();
+        OperatorOverloadingContext overloading = res.overloadingContext.getMultiply();
         expContext.append(".").append(overloading.name()).append("(");
         ast.getRight().accept(this, expContext);
         expContext.append(")");
@@ -112,7 +126,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
     @Override
     public ExpResult visit(DivideAst ast, ExpContext expContext) {
         ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.getOverloadingContext().getDivide();
+        OperatorOverloadingContext overloading = res.overloadingContext.getDivide();
         expContext.append(".").append(overloading.name()).append("(");
         ast.getRight().accept(this, expContext);
         expContext.append(")");
@@ -122,7 +136,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
     @Override
     public ExpResult visit(RemainderAst ast, ExpContext expContext) {
         ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.getOverloadingContext().getRemainder();
+        OperatorOverloadingContext overloading = res.overloadingContext.getRemainder();
         expContext.append(".").append(overloading.name()).append("(");
         ast.getRight().accept(this, expContext);
         expContext.append(")");

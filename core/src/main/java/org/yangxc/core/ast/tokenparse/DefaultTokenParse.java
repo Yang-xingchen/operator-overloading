@@ -1,4 +1,4 @@
-package org.yangxc.core.parse;
+package org.yangxc.core.ast.tokenparse;
 
 import org.yangxc.core.ast.tree.Token;
 import org.yangxc.core.exception.ParseException;
@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class DefaultParse implements Parse {
+public class DefaultTokenParse implements TokenParse {
 
     private final String expression;
     private int point;
@@ -26,7 +26,7 @@ public class DefaultParse implements Parse {
             ')', Token.RIGHT_PARENTHESIS
     );
 
-    public DefaultParse(String expression) {
+    public DefaultTokenParse(String expression) {
         this.expression = expression;
         point = 0;
     }
@@ -64,7 +64,7 @@ public class DefaultParse implements Parse {
         StringBuilder stringBuilder = new StringBuilder();
         while (true) {
             char charAt = expression.charAt(point++);
-            if (Character.isDigit(charAt) || Character.isAlphabetic(charAt)) {
+            if (Character.isDigit(charAt) || Character.isAlphabetic(charAt) || '_' == charAt) {
                 stringBuilder.append(charAt);
             } else {
                 throw new ParseException(expression, point);
