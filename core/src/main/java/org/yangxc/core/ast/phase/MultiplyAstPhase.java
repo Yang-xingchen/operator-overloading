@@ -20,7 +20,7 @@ public class MultiplyAstPhase implements AstPhase {
     }
 
     @Override
-    public AstPhase.Result handle(List<Ast> tokens) {
+    public AstPhase.Result handle(List<Ast> tokens, AstPhaseContext context) {
         List<Integer> points = new ArrayList<>();
         for (int i = 1; i < tokens.size() - 1; i++) {
             if (tokens.get(i) == Token.MULTIPLY) {

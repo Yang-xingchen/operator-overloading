@@ -21,13 +21,13 @@ public class ProcessorDebug {
                 import org.yangxc.core.annotation.OperatorService;
                 import org.yangxc.core.annotation.Statement;
                 import org.yangxc.core.annotation.NumberType;
+                import java.math.BigDecimal;
                 
-                @OperatorService
+                @OperatorService(imports={BigDecimal.class})
                 public interface BaseService {
                 
-
-                    @OperatorFunction(value = "123_456_789_123_456_789 % 1_000_000_000", numberType = NumberType.BIG_INTEGER)
-                    long big();
+                    @OperatorFunction(value = "(BigDecimal)a", numberType = NumberType.BIG_INTEGER)
+                    long cast(int a);
                 
                 }
                 """;

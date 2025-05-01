@@ -6,11 +6,14 @@ import org.yangxc.core.ast.AstParse;
 import org.yangxc.core.handle.overloading.OverloadingContext;
 import org.yangxc.core.exception.ElementException;
 
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ServiceHandle {
 
@@ -21,6 +24,8 @@ public class ServiceHandle {
     private String value;
     private ExecutableElement numberTypeElement;
     private NumberType numberType;
+    private ExecutableElement importsElement;
+    private List<String> imports;
     private List<FunctionHandle> functionHandles;
 
     public static final String TAB = "    ";
@@ -56,10 +61,24 @@ public class ServiceHandle {
                                 return NumberType.valueOf(c.getSimpleName().toString());
                             }
                         }, null);
+                    } else if ("imports".equals(name)) {
+                        importsElement = executableElement;
+                        imports = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            @Override
+                            public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
+                                return vals.stream().map(val -> val.accept(new BaseAnnotationValueVisitor<String, Object>() {
+                                    @Override
+                                    public String visitType(TypeMirror t, Object object) {
+                                        return t.toString();
+                                    }
+                                }, null)).toList();
+                            }
+                        }, null);
                     }
                 });
         value = value != null && value.trim().isEmpty() ? value.trim() : (typeElement.getSimpleName() + "Impl");
         numberType = numberType != null && numberType != NumberType.INHERIT ? numberType : NumberType.BIG_DECIMAL;
+        imports = imports != null ? imports : List.of();
     }
 
     public ServiceHandle setFunctionContexts(List<FunctionHandle> functionHandles) {
@@ -74,7 +93,7 @@ public class ServiceHandle {
     public void setup(OverloadingContext overloadingContext) {
         try {
             for (FunctionHandle functionHandle : functionHandles) {
-                functionHandle.setup(astParse, overloadingContext, numberType);
+                functionHandle.setup(astParse, overloadingContext, numberType, imports);
             }
         } catch (ElementException e) {
             throw e;
@@ -112,8 +131,10 @@ public class ServiceHandle {
         try {
             String pack = getPackage();
             pack = pack != null ? ("package " + pack + ";\n") : "";
-            String imports = functionHandles.stream()
-                    .flatMap(functionHandle -> functionHandle.getUseClasses().stream())
+            String imports = Stream.concat(
+                            functionHandles.stream().flatMap(functionHandle -> functionHandle.getUseClasses().stream()),
+                            this.imports.stream()
+                    )
                     .distinct()
                     .sorted()
                     .reduce(new StringBuilder(),

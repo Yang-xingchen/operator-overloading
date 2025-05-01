@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface AstPhase {
 
-    Result handle(List<Ast> tokens);
+    Result handle(List<Ast> tokens, AstPhaseContext context);
 
     record Result(boolean handle, List<Ast> tokens) {
 

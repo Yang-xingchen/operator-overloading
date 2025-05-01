@@ -32,7 +32,7 @@ public class FunctionHandle {
 
     private Ast ast;
     private OverloadingContext overloadingContext;
-    private Map<String, VariableContext> variableContexts;
+    private SymbolContext symbolContext;
 
     public FunctionHandle(ExecutableElement element) {
         this.element = element;
@@ -89,27 +89,28 @@ public class FunctionHandle {
         statementHandles = statementHandles != null ? statementHandles : List.of();
     }
 
-    public void setup(AstParse astParse, OverloadingContext overloadingContext, NumberType numberType) {
+    public void setup(AstParse astParse, OverloadingContext overloadingContext, NumberType numberType, List<String> imports) {
         this.numberType = this.numberType != NumberType.INHERIT ? this.numberType : numberType;
         this.overloadingContext = overloadingContext;
-        variableContexts = element.getParameters().stream()
-                .map(element -> new VariableContext(element.getSimpleName().toString(), element.asType().toString(), 0))
-                .collect(Collectors.toMap(VariableContext::name, Function.identity(), (c1, c2) -> c1));
-        try {
-            ast = astParse.parse(value);
-        } catch (ElementException e) {
-            throw e;
-        } catch (Throwable e) {
-            throw new ElementException(e, valueElement);
-        }
+        List<VariableContext> variableContexts = element.getParameters().stream()
+                .map(element -> new VariableContext(element.getSimpleName().toString(), element.asType().toString(), -1))
+                .toList();
+        symbolContext = new SymbolContext(variableContexts, imports);
         try {
             for (StatementHandle statementHandle : statementHandles) {
-                statementHandle.setup(astParse, overloadingContext, variableContexts, this.numberType);
+                statementHandle.setup(astParse, overloadingContext, symbolContext, this.numberType);
             }
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
             throw new ElementException(e, statementsElement);
+        }
+        try {
+            ast = astParse.parse(value, symbolContext);
+        } catch (ElementException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new ElementException(e, valueElement);
         }
     }
 
@@ -156,7 +157,7 @@ public class FunctionHandle {
     }
 
     private String getExpString(Ast ast, TypeMirror resType) {
-        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, variableContexts, numberType);
+        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, symbolContext, numberType);
         ExpVisitor.ExpResult result = ast.accept(ExpVisitor.INSTANCE, expContext);
         String type = resType.toString();
         if (Objects.equals(result.getType(), type)) {

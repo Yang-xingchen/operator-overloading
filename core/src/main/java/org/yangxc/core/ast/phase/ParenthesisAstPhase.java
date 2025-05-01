@@ -1,0 +1,66 @@
+package org.yangxc.core.ast.phase;
+
+import org.yangxc.core.ast.tree.Ast;
+import org.yangxc.core.ast.tree.CastAst;
+import org.yangxc.core.ast.tree.Token;
+import org.yangxc.core.ast.tree.TypeAst;
+
+import java.util.*;
+
+public class ParenthesisAstPhase implements AstPhase {
+
+    private static final ParenthesisAstPhase INSTANCE = new ParenthesisAstPhase();
+
+    private ParenthesisAstPhase() {
+
+    }
+
+    public static ParenthesisAstPhase getInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    public Result handle(List<Ast> tokens, AstPhaseContext context) {
+        LinkedList<Integer> stack = new LinkedList<>();
+        Ast[] res = tokens.toArray(new Ast[0]);
+        boolean handle = false;
+        for (int i = tokens.size() - 1; i >=0 ; i--) {
+            if (tokens.get(i) == Token.RIGHT_PARENTHESIS) {
+                stack.addLast(i);
+                continue;
+            }
+            if (tokens.get(i) == Token.LEFT_PARENTHESIS) {
+                handle = true;
+                Integer end = stack.removeLast();
+                if (end == null) {
+                    throw new IllegalArgumentException("miss match ')'");
+                }
+                if (!stack.isEmpty()) {
+                    continue;
+                }
+                if (end - 2 == i) {
+                    res[end] = null;
+                    if (res[i + 1] instanceof TypeAst cast && end + 1 < tokens.size()) {
+                        res[i] = new CastAst(cast, res[end + 1]);
+                        res[i + 1] = null;
+                        res[end + 1] = null;
+                    }
+                    continue;
+                }
+                List<Ast> subTokens = new ArrayList<>(tokens.subList(i + 1, end));
+                for (int j = i + 1; j <= end; j++) {
+                    res[j] = null;
+                }
+                res[i] = context.subParse(subTokens);
+            }
+        }
+        if (!handle) {
+            return new Result(false, tokens);
+        }
+        if (stack.isEmpty()) {
+            return new Result(true, Arrays.stream(res).filter(Objects::nonNull).toList());
+        }
+        throw new IllegalArgumentException("miss match '('");
+    }
+
+}

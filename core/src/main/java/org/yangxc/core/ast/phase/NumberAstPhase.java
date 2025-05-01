@@ -22,7 +22,7 @@ public class NumberAstPhase implements AstPhase {
     }
 
     @Override
-    public Result handle(List<Ast> tokens) {
+    public Result handle(List<Ast> tokens, AstPhaseContext context) {
         List<Integer> points = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
             if (tokens.get(i) instanceof Token t && t.isDigit()) {
@@ -64,35 +64,27 @@ public class NumberAstPhase implements AstPhase {
         // (n)
         Token integer = (Token) tokens.get(point);
         if (p1 == Token.LEFT_PARENTHESIS && n1 == Token.RIGHT_PARENTHESIS) {
-            res[point - 1] = null;
-            res[point + 1] = null;
             res[point] = new NumberAst(null, integer, null);
             return;
         }
         // (n.m)
         if (p1 == Token.LEFT_PARENTHESIS && n1 == Token.DOT && n2 != null && n2.isDigit() && n3 == Token.RIGHT_PARENTHESIS) {
-            res[point - 1] = null;
             res[point + 1] = null;
             res[point + 2] = null;
-            res[point + 3] = null;
             res[point] = new NumberAst(null, integer, n2);
             return;
         }
         // (-n)
         if (p2 == Token.LEFT_PARENTHESIS && p1 == Token.SUBTRACT && n1 == Token.RIGHT_PARENTHESIS) {
-            res[point - 2] = null;
             res[point - 1] = null;
-            res[point + 1] = null;
             res[point] = new NumberAst(Token.SUBTRACT, integer, n2);
             return;
         }
         // (-n.m)
         if (p2 == Token.LEFT_PARENTHESIS && p1 == Token.SUBTRACT && n1 == Token.DOT && n2 != null && n2.isDigit() && n3 == Token.RIGHT_PARENTHESIS) {
-            res[point - 2] = null;
             res[point - 1] = null;
             res[point + 1] = null;
             res[point + 2] = null;
-            res[point + 3] = null;
             res[point] = new NumberAst(Token.SUBTRACT, integer, n2);
             return;
         }
@@ -110,19 +102,15 @@ public class NumberAstPhase implements AstPhase {
         }
         // (+n)
         if (p2 == Token.LEFT_PARENTHESIS && p1 == Token.PLUS && n1 == Token.RIGHT_PARENTHESIS) {
-            res[point - 2] = null;
             res[point - 1] = null;
-            res[point + 1] = null;
             res[point] = new NumberAst(null, integer, n2);
             return;
         }
         // (+n.m)
         if (p2 == Token.LEFT_PARENTHESIS && p1 == Token.PLUS && n1 == Token.DOT && n2 != null && n2.isDigit() && n3 == Token.RIGHT_PARENTHESIS) {
-            res[point - 2] = null;
             res[point - 1] = null;
             res[point + 1] = null;
             res[point + 2] = null;
-            res[point + 3] = null;
             res[point] = new NumberAst(null, integer, n2);
             return;
         }

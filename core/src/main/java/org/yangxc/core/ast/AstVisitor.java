@@ -8,11 +8,19 @@ public interface AstVisitor<T, R> {
         return defaultVisit(ast, t);
     }
 
+    default R visit(TypeAst ast, T t) {
+        return defaultVisit(ast, t);
+    }
+
     default R visit(VariableAst ast, T t) {
         return defaultVisit(ast, t);
     }
 
     default R visit(NumberAst ast, T t) {
+        return defaultVisit(ast, t);
+    }
+
+    default R visit(CastAst ast, T t) {
         return defaultVisit(ast, t);
     }
 

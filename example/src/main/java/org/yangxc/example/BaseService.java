@@ -7,7 +7,7 @@ import org.yangxc.core.annotation.Statement;
 
 import java.math.BigDecimal;
 
-@OperatorService
+@OperatorService(imports = BigDecimal.class)
 public interface BaseService {
 
     @OperatorFunction("1+2-3+4")
@@ -31,5 +31,11 @@ public interface BaseService {
 
     @OperatorFunction(value = "123_456_789_123_456_789 % 1_000_000_000", numberType = NumberType.BIG_INTEGER)
     long big();
+
+    @OperatorFunction("(BigDecimal)a + a + (BigDecimal)b")
+    BigDecimal castAdd(BigDecimal a, int b);
+
+    @OperatorFunction("(1+2)*3")
+    int parenthesis();
 
 }

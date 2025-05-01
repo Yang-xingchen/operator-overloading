@@ -19,4 +19,9 @@ public @interface OperatorService {
      */
     NumberType numberType() default NumberType.INHERIT;
 
+    /**
+     * 导入，可在表达式中使用简单名称进行强转
+     */
+    Class<?>[] imports() default {};
+
 }

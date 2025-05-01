@@ -29,7 +29,7 @@ public class Token implements Ast {
         return value.chars().allMatch(codePoint -> Character.isDigit(codePoint) || codePoint == '_');
     }
 
-    public boolean isVariable() {
+    public boolean isSymbol() {
         return Character.isAlphabetic(value.charAt(0));
     }
 

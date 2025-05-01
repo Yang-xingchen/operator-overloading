@@ -1,7 +1,7 @@
 package org.yangxc.core.ast.phase;
 
-import org.yangxc.core.ast.tree.Ast;
 import org.yangxc.core.ast.tree.AddAst;
+import org.yangxc.core.ast.tree.Ast;
 import org.yangxc.core.ast.tree.SubtractAst;
 import org.yangxc.core.ast.tree.Token;
 
@@ -23,7 +23,7 @@ public class AddAstPhase implements AstPhase {
     }
 
     @Override
-    public AstPhase.Result handle(List<Ast> tokens) {
+    public AstPhase.Result handle(List<Ast> tokens, AstPhaseContext context) {
         List<Integer> points = new ArrayList<>();
         for (int i = 1; i < tokens.size() - 1; i++) {
             if (tokens.get(i) == Token.PLUS) {

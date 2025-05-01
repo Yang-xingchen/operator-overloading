@@ -13,6 +13,8 @@ public class Main {
         System.out.println(service.multiply(new BigDecimal(2)));
         System.out.println(service.var());
         System.out.println(service.big());
+        System.out.println(service.castAdd(new BigDecimal(1), 2));
+        System.out.println(service.parenthesis());
     }
 
 }

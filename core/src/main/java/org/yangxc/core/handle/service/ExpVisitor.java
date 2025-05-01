@@ -9,8 +9,6 @@ import org.yangxc.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.core.handle.overloading.OverloadingContext;
 
-import java.util.Map;
-
 public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.ExpResult> {
 
     public static final ExpVisitor INSTANCE = new ExpVisitor();
@@ -22,18 +20,18 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
         private final StringBuilder stringBuilder;
         private final OverloadingContext overloadingContext;
-        private final Map<String, VariableContext> varMap;
+        private final SymbolContext symbolContext;
         private final NumberType numberType;
 
-        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, Map<String, VariableContext> varMap, NumberType numberType) {
+        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType) {
             this.stringBuilder = stringBuilder;
             this.overloadingContext = overloadingContext;
-            this.varMap = varMap;
+            this.symbolContext = symbolContext;
             this.numberType = numberType;
         }
 
-        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> varMap, NumberType numberType) {
-            this(new StringBuilder(), overloadingContext, varMap, numberType);
+        public ExpContext(OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType) {
+            this(new StringBuilder(), overloadingContext, symbolContext, numberType);
         }
 
         public ExpContext append(String string) {
@@ -74,7 +72,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
     @Override
     public ExpResult visit(VariableAst ast, ExpContext expContext) {
         expContext.append(ast.toString());
-        return expContext.createResult(expContext.varMap.get(ast.toString()).type());
+        return expContext.createResult(expContext.symbolContext.getVarType(ast.toString()));
     }
 
     @Override
@@ -91,6 +89,28 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             return expContext.createResult(ClassName.BIG_INTEGER);
         }
         throw new UnsupportedOperationException("unknown numberType convert[" + expContext.numberType + "]");
+    }
+
+    @Override
+    public ExpResult visit(CastAst ast, ExpContext expContext) {
+        ExpContext subExpContext = new ExpContext(new StringBuilder(), expContext.overloadingContext, expContext.symbolContext, expContext.numberType);
+        ExpResult res = ast.getAst().accept(this, subExpContext);
+        if (res.type.equals(ast.getSourceType())) {
+            expContext.append(subExpContext.toString());
+            return expContext.createResult(ast.getSourceType());
+        }
+        CastContext cast = res.cast(ast.getSourceType());
+        switch (cast.type()) {
+            case CAST -> expContext.append("(").append(ClassName.getSimpleName(ast.getSourceType())).append(")")
+                    .append(subExpContext.toString());
+            case NEW -> expContext.append("new ").append(ClassName.getSimpleName(ast.getSourceType()))
+                    .append("(").append(subExpContext.toString()).append(")");
+            case METHOD -> expContext.append(subExpContext.toString())
+                    .append(".").append(cast.name()).append("()'");
+            case STATIC_METHOD -> expContext.append(cast.name())
+                    .append("(").append(subExpContext.toString()).append(")");
+        }
+        return expContext.createResult(ast.getSourceType());
     }
 
     @Override

@@ -12,7 +12,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import java.util.Map;
 
 public class StatementHandle {
 
@@ -29,7 +28,7 @@ public class StatementHandle {
 
     private Ast ast;
     private OverloadingContext overloadingContext;
-    private Map<String, VariableContext> variableContexts;
+    private SymbolContext symbolContext;
 
     public StatementHandle(AnnotationMirror annotationMirror, int index) {
         this.index = index;
@@ -76,18 +75,18 @@ public class StatementHandle {
         return type;
     }
 
-    public void setup(AstParse astParse, OverloadingContext overloadingContext, Map<String, VariableContext> variableContexts, NumberType numberType) {
+    public void setup(AstParse astParse, OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType) {
         this.numberType = this.numberType != NumberType.INHERIT ? this.numberType : numberType;
         this.overloadingContext = overloadingContext;
-        this.variableContexts = variableContexts;
+        this.symbolContext = symbolContext;
         try {
-            ast = astParse.parse(exp);
+            ast = astParse.parse(exp, symbolContext);
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
             throw new ElementException(e, expElement);
         }
-        variableContexts.put(varName, new VariableContext(varName, type.toString(), index));
+        symbolContext.put(new VariableContext(varName, type.toString(), index));
     }
 
     public String write() {
@@ -116,7 +115,7 @@ public class StatementHandle {
         ExpVisitor.ExpContext expContext;
         ExpVisitor.ExpResult result;
         try {
-            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContexts, numberType);
+            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, symbolContext, numberType);
             result = ast.accept(ExpVisitor.INSTANCE, expContext);
         } catch (ElementException e) {
             throw e;
