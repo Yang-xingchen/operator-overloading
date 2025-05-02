@@ -2,22 +2,10 @@ package org.yangxc.core.ast.tree;
 
 import org.yangxc.core.ast.AstVisitor;
 
-public class DivideAst implements Ast {
-
-    private final Ast left;
-    private final Ast right;
+public class DivideAst extends BiAst implements Ast {
 
     public DivideAst(Ast left, Ast right) {
-        this.left = left;
-        this.right = right;
-    }
-
-    public Ast getLeft() {
-        return left;
-    }
-
-    public Ast getRight() {
-        return right;
+        super(left, right);
     }
 
     @Override

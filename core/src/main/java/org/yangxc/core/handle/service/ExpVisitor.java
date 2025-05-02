@@ -9,6 +9,8 @@ import org.yangxc.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.core.handle.overloading.OverloadingContext;
 
+import java.util.function.Function;
+
 public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.ExpResult> {
 
     public static final ExpVisitor INSTANCE = new ExpVisitor();
@@ -32,6 +34,10 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
         public ExpContext(OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType) {
             this(new StringBuilder(), overloadingContext, symbolContext, numberType);
+        }
+
+        private ExpContext copy(StringBuilder stringBuilder) {
+            return new ExpContext(stringBuilder, overloadingContext, symbolContext, numberType);
         }
 
         public ExpContext append(String string) {
@@ -88,12 +94,12 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             expContext.append("new BigInteger(\"").append(ast.value()).append("\")");
             return expContext.createResult(ClassName.BIG_INTEGER);
         }
-        throw new UnsupportedOperationException("unknown numberType convert[" + expContext.numberType + "]");
+        throw new UnsupportedOperationException("unknown numberType convert: " + expContext.numberType);
     }
 
     @Override
     public ExpResult visit(CastAst ast, ExpContext expContext) {
-        ExpContext subExpContext = new ExpContext(new StringBuilder(), expContext.overloadingContext, expContext.symbolContext, expContext.numberType);
+        ExpContext subExpContext = expContext.copy(new StringBuilder());
         ExpResult res = ast.getAst().accept(this, subExpContext);
         if (res.type.equals(ast.getSourceType())) {
             expContext.append(subExpContext.toString());
@@ -106,66 +112,68 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             case NEW -> expContext.append("new ").append(ClassName.getSimpleName(ast.getSourceType()))
                     .append("(").append(subExpContext.toString()).append(")");
             case METHOD -> expContext.append(subExpContext.toString())
-                    .append(".").append(cast.name()).append("()'");
+                    .append(".").append(cast.name()).append("()");
             case STATIC_METHOD -> expContext.append(cast.name())
                     .append("(").append(subExpContext.toString()).append(")");
+            default -> throw new UnsupportedOperationException("unknown cast type: " + cast.type());
         }
         return expContext.createResult(ast.getSourceType());
     }
 
+    private ExpResult visitBiOperator(BiAst ast, ExpContext expContext, Function<ClassOverloadingContext, OperatorOverloadingContext> getOverloading) {
+        ExpContext subExpContext = expContext.copy(new StringBuilder());
+        ExpResult res = ast.getLeft().accept(this, subExpContext);
+        OperatorOverloadingContext overloading = getOverloading.apply(res.overloadingContext);
+        return switch (overloading.type()) {
+            case PRIMITIVE -> {
+                expContext.append("(").append(subExpContext.toString()).append(overloading.name());
+                ast.getRight().accept(this, expContext);
+                expContext.append(")");
+                yield expContext.createResult(overloading.resultType());
+            }
+            case METHOD -> {
+                expContext.append(subExpContext.toString()).append(".").append(overloading.name()).append("(");
+                ast.getRight().accept(this, expContext);
+                expContext.append(")");
+                yield expContext.createResult(overloading.resultType());
+            }
+            case STATIC_METHOD -> {
+                expContext.append(overloading.name()).append(subExpContext.toString()).append(", ");
+                ast.getRight().accept(this, expContext);
+                expContext.append(")");
+                yield expContext.createResult(overloading.resultType());
+            }
+        };
+    }
+
     @Override
     public ExpResult visit(AddAst ast, ExpContext expContext) {
-        ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.overloadingContext.getAdd();
-        expContext.append(".").append(overloading.name()).append("(");
-        ast.getRight().accept(this, expContext);
-        expContext.append(")");
-        return expContext.createResult(overloading.resultType());
+        return visitBiOperator(ast, expContext, ClassOverloadingContext::getAdd);
     }
 
     @Override
     public ExpResult visit(SubtractAst ast, ExpContext expContext) {
-        ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.overloadingContext.getSubtract();
-        expContext.append(".").append(overloading.name()).append("(");
-        ast.getRight().accept(this, expContext);
-        expContext.append(")");
-        return expContext.createResult(overloading.resultType());
+        return visitBiOperator(ast, expContext, ClassOverloadingContext::getSubtract);
     }
 
     @Override
     public ExpResult visit(MultiplyAst ast, ExpContext expContext) {
-        ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.overloadingContext.getMultiply();
-        expContext.append(".").append(overloading.name()).append("(");
-        ast.getRight().accept(this, expContext);
-        expContext.append(")");
-        return expContext.createResult(overloading.resultType());
+        return visitBiOperator(ast, expContext, ClassOverloadingContext::getMultiply);
     }
 
     @Override
     public ExpResult visit(DivideAst ast, ExpContext expContext) {
-        ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.overloadingContext.getDivide();
-        expContext.append(".").append(overloading.name()).append("(");
-        ast.getRight().accept(this, expContext);
-        expContext.append(")");
-        return expContext.createResult(overloading.resultType());
+        return visitBiOperator(ast, expContext, ClassOverloadingContext::getDivide);
     }
 
     @Override
     public ExpResult visit(RemainderAst ast, ExpContext expContext) {
-        ExpResult res = ast.getLeft().accept(this, expContext);
-        OperatorOverloadingContext overloading = res.overloadingContext.getRemainder();
-        expContext.append(".").append(overloading.name()).append("(");
-        ast.getRight().accept(this, expContext);
-        expContext.append(")");
-        return expContext.createResult(overloading.resultType());
+        return visitBiOperator(ast, expContext, ClassOverloadingContext::getRemainder);
     }
 
     @Override
     public ExpResult defaultVisit(Ast ast, ExpContext expContext) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("unsupported exp handle[" + ast.getClass().getSimpleName() + "]: " + ast);
     }
 
 }

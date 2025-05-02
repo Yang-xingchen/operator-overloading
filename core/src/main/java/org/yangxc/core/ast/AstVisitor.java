@@ -25,27 +25,27 @@ public interface AstVisitor<T, R> {
     }
 
     default R visit(AddAst ast, T t) {
-        return biVisit(ast, ast.getLeft(), ast.getRight(), t);
+        return this.visit((BiAst) ast, t);
     }
 
     default R visit(SubtractAst ast, T t) {
-        return biVisit(ast, ast.getLeft(), ast.getRight(), t);
+        return this.visit((BiAst) ast, t);
     }
 
     default R visit(MultiplyAst ast, T t) {
-        return biVisit(ast, ast.getLeft(), ast.getRight(), t);
+        return this.visit((BiAst) ast, t);
     }
 
     default R visit(DivideAst ast, T t) {
-        return biVisit(ast, ast.getLeft(), ast.getRight(), t);
+        return this.visit((BiAst) ast, t);
     }
 
     default R visit(RemainderAst ast, T t) {
-        return biVisit(ast, ast.getLeft(), ast.getRight(), t);
+        return this.visit((BiAst) ast, t);
     }
 
-    default R biVisit(Ast self, Ast left, Ast right, T t) {
-        return defaultVisit(self, t);
+    default R visit(BiAst ast, T t) {
+        return defaultVisit(ast, t);
     }
 
     default R defaultVisit(Ast ast, T t) {

@@ -35,6 +35,9 @@ public interface BaseService {
     @OperatorFunction("(BigDecimal)a + a + (BigDecimal)b")
     BigDecimal castAdd(BigDecimal a, int b);
 
+    @OperatorFunction("(BigDecimal)((int)a + b) + a")
+    int castAdd1(BigDecimal a, int b);
+
     @OperatorFunction("(1+2)*3")
     int parenthesis();
 

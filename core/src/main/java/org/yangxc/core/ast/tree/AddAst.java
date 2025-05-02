@@ -2,22 +2,10 @@ package org.yangxc.core.ast.tree;
 
 import org.yangxc.core.ast.AstVisitor;
 
-public class AddAst implements Ast {
-
-    private final Ast left;
-    private final Ast right;
+public class AddAst extends BiAst implements Ast {
 
     public AddAst(Ast left, Ast right) {
-        this.left = left;
-        this.right = right;
-    }
-
-    public Ast getLeft() {
-        return left;
-    }
-
-    public Ast getRight() {
-        return right;
+        super(left, right);
     }
 
     @Override

@@ -72,7 +72,7 @@ public class AstParse {
             }
         }
         if (tokens.size() != 1) {
-            throw new RuntimeException();
+            throw new RuntimeException("multi ast parse result: " + tokens);
         }
         return tokens.get(0);
     }

@@ -26,8 +26,8 @@ public class ProcessorDebug {
                 @OperatorService(imports={BigDecimal.class})
                 public interface BaseService {
                 
-                    @OperatorFunction(value = "(BigDecimal)a", numberType = NumberType.BIG_INTEGER)
-                    long cast(int a);
+                    @OperatorFunction("(int)a + a + b")
+                    int castAdd1(BigDecimal a, int b);
                 
                 }
                 """;

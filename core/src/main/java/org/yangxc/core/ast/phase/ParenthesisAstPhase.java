@@ -35,9 +35,11 @@ public class ParenthesisAstPhase implements AstPhase {
                 if (end == null) {
                     throw new IllegalArgumentException("miss match ')'");
                 }
+                // 只处理最内层
                 if (!stack.isEmpty()) {
                     continue;
                 }
+                // 只有一个token
                 if (end - 2 == i) {
                     res[end] = null;
                     if (res[i + 1] instanceof TypeAst cast && end + 1 < tokens.size()) {
@@ -47,6 +49,7 @@ public class ParenthesisAstPhase implements AstPhase {
                     }
                     continue;
                 }
+                // 多个token
                 List<Ast> subTokens = new ArrayList<>(tokens.subList(i + 1, end));
                 for (int j = i + 1; j <= end; j++) {
                     res[j] = null;

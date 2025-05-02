@@ -16,11 +16,11 @@ public class ClassOverloading {
 
     static {
         BIG_DECIMAL_CONTEXT = new ClassOverloadingContext(BIG_DECIMAL);
-        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, "add", BIG_DECIMAL, BIG_DECIMAL));
-        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, "subtract", BIG_DECIMAL, BIG_DECIMAL));
-        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, "multiply", BIG_DECIMAL, BIG_DECIMAL));
-        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, "divide", BIG_DECIMAL, BIG_DECIMAL));
-        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, "remainder", BIG_DECIMAL, BIG_DECIMAL));
+        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.METHOD, "add", BIG_DECIMAL, BIG_DECIMAL));
+        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.METHOD, "subtract", BIG_DECIMAL, BIG_DECIMAL));
+        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.METHOD, "multiply", BIG_DECIMAL, BIG_DECIMAL));
+        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.METHOD, "divide", BIG_DECIMAL, BIG_DECIMAL));
+        BIG_DECIMAL_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.METHOD, "remainder", BIG_DECIMAL, BIG_DECIMAL));
         BIG_DECIMAL_CONTEXT.set(new CastContext(BIG_DECIMAL, METHOD, "byteValueExact", BYTE));
         BIG_DECIMAL_CONTEXT.set(new CastContext(BIG_DECIMAL, METHOD, "shortValueExact", SHORT));
         BIG_DECIMAL_CONTEXT.set(new CastContext(BIG_DECIMAL, METHOD, "intValueExact", INT));
@@ -35,11 +35,11 @@ public class ClassOverloading {
 
     static {
         BIG_INTEGER_CONTEXT = new ClassOverloadingContext(BIG_INTEGER);
-        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, "add", BIG_INTEGER, BIG_INTEGER));
-        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, "subtract", BIG_INTEGER, BIG_INTEGER));
-        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, "multiply", BIG_INTEGER, BIG_INTEGER));
-        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, "divide", BIG_INTEGER, BIG_INTEGER));
-        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, "remainder", BIG_INTEGER, BIG_INTEGER));
+        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.METHOD, "add", BIG_INTEGER, BIG_INTEGER));
+        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.METHOD, "subtract", BIG_INTEGER, BIG_INTEGER));
+        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.METHOD, "multiply", BIG_INTEGER, BIG_INTEGER));
+        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.METHOD, "divide", BIG_INTEGER, BIG_INTEGER));
+        BIG_INTEGER_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.METHOD, "remainder", BIG_INTEGER, BIG_INTEGER));
         BIG_INTEGER_CONTEXT.set(new CastContext(BIG_INTEGER, METHOD, "byteValueExact", BYTE));
         BIG_INTEGER_CONTEXT.set(new CastContext(BIG_INTEGER, METHOD, "shortValueExact", SHORT));
         BIG_INTEGER_CONTEXT.set(new CastContext(BIG_INTEGER, METHOD, "intValueExact", INT));
@@ -54,7 +54,7 @@ public class ClassOverloading {
 
     static {
         STRING_CONTEXT = new ClassOverloadingContext(STRING);
-        STRING_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, "concat", STRING, STRING));
+        STRING_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.METHOD, "concat", STRING, STRING));
         STRING_CONTEXT.set(new CastContext(STRING, STATIC_METHOD, "Byte.parseByte", BYTE));
         STRING_CONTEXT.set(new CastContext(STRING, STATIC_METHOD, "Short.parseShort", SHORT));
         STRING_CONTEXT.set(new CastContext(STRING, STATIC_METHOD, "Integer.parseInt", INT));
@@ -70,6 +70,11 @@ public class ClassOverloading {
 
     static {
         BYTE_CONTEXT = new ClassOverloadingContext(BYTE);
+        BYTE_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.PRIMITIVE, "+", BYTE, BYTE));
+        BYTE_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.PRIMITIVE, "-", BYTE, BYTE));
+        BYTE_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.PRIMITIVE, "*", BYTE, BYTE));
+        BYTE_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.PRIMITIVE, "/", BYTE, BYTE));
+        BYTE_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.PRIMITIVE, "%", BYTE, BYTE));
         BYTE_CONTEXT.set(new CastContext(BYTE, STATIC_METHOD, "Byte.toString", STRING));
         BYTE_CONTEXT.set(new CastContext(BYTE, NEW, null, BIG_DECIMAL));
         BYTE_CONTEXT.set(new CastContext(BYTE, STATIC_METHOD, "BigInteger.valueOf", BIG_INTEGER));
@@ -86,6 +91,11 @@ public class ClassOverloading {
 
     static {
         SHORT_CONTEXT = new ClassOverloadingContext(SHORT);
+        SHORT_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.PRIMITIVE, "+", SHORT, SHORT));
+        SHORT_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.PRIMITIVE, "-", SHORT, SHORT));
+        SHORT_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.PRIMITIVE, "*", SHORT, SHORT));
+        SHORT_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.PRIMITIVE, "/", SHORT, SHORT));
+        SHORT_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.PRIMITIVE, "%", SHORT, SHORT));
         SHORT_CONTEXT.set(new CastContext(SHORT, STATIC_METHOD, "Short.toString", STRING));
         SHORT_CONTEXT.set(new CastContext(SHORT, NEW, null, BIG_DECIMAL));
         SHORT_CONTEXT.set(new CastContext(SHORT, STATIC_METHOD, "BigInteger.valueOf", BIG_INTEGER));
@@ -102,6 +112,11 @@ public class ClassOverloading {
 
     static {
         INT_CONTEXT = new ClassOverloadingContext(INT);
+        INT_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.PRIMITIVE, "+", INT, INT));
+        INT_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.PRIMITIVE, "-", INT, INT));
+        INT_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.PRIMITIVE, "*", INT, INT));
+        INT_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.PRIMITIVE, "/", INT, INT));
+        INT_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.PRIMITIVE, "%", INT, INT));
         INT_CONTEXT.set(new CastContext(INT, STATIC_METHOD, "Int.toString", STRING));
         INT_CONTEXT.set(new CastContext(INT, NEW, null, BIG_DECIMAL));
         INT_CONTEXT.set(new CastContext(INT, STATIC_METHOD, "BigInteger.valueOf", BIG_INTEGER));
@@ -118,6 +133,11 @@ public class ClassOverloading {
 
     static {
         LONG_CONTEXT = new ClassOverloadingContext(LONG);
+        LONG_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.PRIMITIVE, "+", LONG, LONG));
+        LONG_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.PRIMITIVE, "-", LONG, LONG));
+        LONG_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.PRIMITIVE, "*", LONG, LONG));
+        LONG_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.PRIMITIVE, "/", LONG, LONG));
+        LONG_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.PRIMITIVE, "%", LONG, LONG));
         LONG_CONTEXT.set(new CastContext(LONG, STATIC_METHOD, "Long.toString", STRING));
         LONG_CONTEXT.set(new CastContext(LONG, NEW, null, BIG_DECIMAL));
         LONG_CONTEXT.set(new CastContext(LONG, STATIC_METHOD, "BigInteger.valueOf", BIG_INTEGER));
@@ -134,6 +154,11 @@ public class ClassOverloading {
 
     static {
         FLOAT_CONTEXT = new ClassOverloadingContext(FLOAT);
+        FLOAT_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.PRIMITIVE, "+", FLOAT, FLOAT));
+        FLOAT_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.PRIMITIVE, "-", FLOAT, FLOAT));
+        FLOAT_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.PRIMITIVE, "*", FLOAT, FLOAT));
+        FLOAT_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.PRIMITIVE, "/", FLOAT, FLOAT));
+        FLOAT_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.PRIMITIVE, "%", FLOAT, FLOAT));
         FLOAT_CONTEXT.set(new CastContext(FLOAT, STATIC_METHOD, "Float.toString", STRING));
         FLOAT_CONTEXT.set(new CastContext(FLOAT, NEW, null, BIG_DECIMAL));
         FLOAT_CONTEXT.set(new CastContext(FLOAT, CAST, null, BYTE));
@@ -149,6 +174,11 @@ public class ClassOverloading {
 
     static {
         DOUBLE_CONTEXT = new ClassOverloadingContext(DOUBLE);
+        DOUBLE_CONTEXT.set(new OperatorOverloadingContext(Operator.ADD, OperatorType.PRIMITIVE, "+", DOUBLE, DOUBLE));
+        DOUBLE_CONTEXT.set(new OperatorOverloadingContext(Operator.SUBTRACT, OperatorType.PRIMITIVE, "-", DOUBLE, DOUBLE));
+        DOUBLE_CONTEXT.set(new OperatorOverloadingContext(Operator.MULTIPLY, OperatorType.PRIMITIVE, "*", DOUBLE, DOUBLE));
+        DOUBLE_CONTEXT.set(new OperatorOverloadingContext(Operator.DIVIDE, OperatorType.PRIMITIVE, "/", DOUBLE, DOUBLE));
+        DOUBLE_CONTEXT.set(new OperatorOverloadingContext(Operator.REMAINDER, OperatorType.PRIMITIVE, "%", DOUBLE, DOUBLE));
         DOUBLE_CONTEXT.set(new CastContext(DOUBLE, STATIC_METHOD, "Double.toString", STRING));
         DOUBLE_CONTEXT.set(new CastContext(DOUBLE, NEW, null, BIG_DECIMAL));
         DOUBLE_CONTEXT.set(new CastContext(DOUBLE, CAST, null, BYTE));
