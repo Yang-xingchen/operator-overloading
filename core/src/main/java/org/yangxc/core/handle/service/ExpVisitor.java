@@ -94,6 +94,18 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             expContext.append("new BigInteger(\"").append(ast.value()).append("\")");
             return expContext.createResult(ClassName.BIG_INTEGER);
         }
+        if (expContext.numberType == NumberType.PRIMITIVE) {
+            if (ast.isDouble()) {
+                expContext.append(ast.toString());
+                return expContext.createResult(ClassName.DOUBLE);
+            }
+            if (ast.isLong()) {
+                expContext.append(ast.toString()).append("L");
+                return expContext.createResult(ClassName.LONG);
+            }
+            expContext.append(ast.toString());
+            return expContext.createResult(ClassName.INT);
+        }
         throw new UnsupportedOperationException("unknown numberType convert: " + expContext.numberType);
     }
 

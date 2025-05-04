@@ -41,4 +41,10 @@ public interface BaseService {
     @OperatorFunction("(1+2)*3")
     int parenthesis();
 
+    @OperatorFunction(".23+.0045")
+    BigDecimal ignoreInteger();
+
+    @OperatorFunction("-12.34e2-.56-.78e-2")
+    BigDecimal e();
+
 }

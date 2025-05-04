@@ -46,6 +46,9 @@ public class ParenthesisAstPhase implements AstPhase {
                         res[i] = new CastAst(cast, res[end + 1]);
                         res[i + 1] = null;
                         res[end + 1] = null;
+                    } else {
+                        res[i] = res[i + 1];
+                        res[i + 1] = null;
                     }
                     continue;
                 }

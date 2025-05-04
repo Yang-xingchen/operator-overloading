@@ -10,6 +10,9 @@ public @interface Statement {
 
     String varName();
 
+    /**
+     * 表达式，支持同{@link OperatorFunction#value()}
+     */
     String exp();
 
     /**
