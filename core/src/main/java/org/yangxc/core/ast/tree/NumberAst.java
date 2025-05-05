@@ -53,6 +53,10 @@ public class NumberAst implements Ast {
         return eInteger;
     }
 
+    public boolean isNegative() {
+        return sign != null;
+    }
+
     public boolean isLong() {
         long value = Long.parseLong(integer.getValue());
         return value > Integer.MAX_VALUE || value < Integer.MIN_VALUE;
@@ -75,9 +79,14 @@ public class NumberAst implements Ast {
     }
 
     public String value() {
-        String res = (sign != null ? sign.getValue() : "") +
-                integer.getValue() + (decimal != null ? ("." + decimal.getValue()) : "") +
-                (eInteger != null ? ("e" + (eSign != null ? eSign.getValue() : "") + eInteger) : "");
+        String res;
+        if (decimal == null && eInteger == null) {
+            res = (sign != null ? sign.getValue() : "") + integer.getValue() + ".0";
+        } else {
+            res = (sign != null ? sign.getValue() : "") +
+                    integer.getValue() + (decimal != null ? ("." + decimal.getValue()) : "") +
+                    (eInteger != null ? ("e" + (eSign != null ? eSign.getValue() : "") + eInteger) : "");
+        }
         return res.replace("_", "");
     }
 

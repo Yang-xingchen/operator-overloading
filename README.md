@@ -7,10 +7,11 @@
 使用示例: [Main.java](example/src/main/java/org/yangxc/example/Main.java)
 
 # HOW TO USE
-默认使用`NumberType#BIG_DECIMAL`模式，该模式下表达式内的数字转化为`java.math.BigDecimal`。支持`NumberType#BIG_INTEGER`(该模式转成`java.math.BigInteger`)
+默认使用`NumberType#BIG_DECIMAL`模式，该模式下表达式内的数字转化为`java.math.BigDecimal`。
+支持`NumberType#BIG_INTEGER`(该模式转成`java.math.BigInteger`)及`NumberType#PRIMITIVE`(该模式使用原始类型`int`, `long`, `double`)。
 
-1. 配置spi(后续考虑移除该步骤): 
-   1. 在`META-INF/services/javax.annotation.processing.Processor`文件，若已存在则忽略该步骤
+1. 配置spi(后续考虑移除该步骤)，参考见[此处](example/src/main/resources/META-INF/services/javax.annotation.processing.Processor): 
+   1. 添加`META-INF/services/javax.annotation.processing.Processor`文件，若已存在则忽略该步骤
    2. 在该文件内添加`org.yangxc.core.processor.ServiceProcessor`(作为单独一行)
 2. 定义服务接口:
     ```
@@ -20,7 +21,7 @@
    1. 该类型必须为接口
    2. 必须添加`org.yangxc.core.annotation.OperatorService`注解，具体参数见注释[OperatorService.java](core/src/main/java/org/yangxc/core/annotation/OperatorService.java)
    3. 定义方法, 添加`org.yangxc.core.annotation.OperatorFunction`注解，具体参数见注释[OperatorFunction.java](core/src/main/java/org/yangxc/core/annotation/OperatorFunction.java)
-   4. 无需实现类
+   4. _无需实现类_
 3. 获取实现: `org.yangxc.core.Overloading.get(BaseService.class)`
 
 ## Example & Explain
@@ -42,7 +43,7 @@ public interface BaseService {                                                  
 }
 ```
 
-使用
+使用:
 ```java
 BaseService service = Overloading.get(BaseService.class);                                                           // 8
 // 结果为: -1234.5678
@@ -64,14 +65,15 @@ double res = service.test(1);                                                   
   - 在`3`处未定义`numberType`，默认使用接口的`numberType`处理表达式内的数字，即`NumberType#BIG_DECIMAL`
 - 在`8`处获取该类实现对象，在`9`处调用定义的方法
 
-> [!TOP]
+> [!TIP]
 > `statements`表示定义本地变量，可定义多个变量。入参、变量、返回的依赖关系需自行处理，程序会按照定义顺序添加代码。
 
 > [!TIP]
 > 表达式可定义在`@OperatorFunction`的`value`(表示该方法的返回值)及`@Statement`的`exp`(表示该变量的运算表达式)
-> - 可使用方法入参或者定义的变量，变量名称类型需符合操作(即方法入参要求的类型和变量类型需一致，若不一致需要转化，程序**不会**自动进行转化)
+> - 表达式忽略空格、制表符、换行符
+> - 可使用方法入参或者定义的变量，变量类型不支持泛型，需符合操作(即方法入参要求的类型和变量类型需一致，若不一致需要转化，程序**不会**自动进行转化)
 > - 可使用数字，会自动转换为`numberType`定义的类型，`BigDecimal`及`BigInteger`将使用表达式内的字符串进行转化
-> - 数字定义同Java语法，支持包括`1`(整数), `1_000`(下划线分割), `1.23`(小数), `.23`(忽略整数的小数), `-.23`(负数，需在表达式开头), `+.23`(正数，需在表达式开头), `1e2`(科学计数法，`e`大小写皆可), `1L`(`L`结尾，大小写皆可，注意程序将忽略L)
+> - 数字定义同Java语法(十进制)，支持`1`(整数), `1_000`(下划线分割), `1.23`(小数), `.23`(忽略整数的小数), `-.23`(负数，需在表达式开头), `+.23`(正数，需在表达式开头), `1e2`(科学计数法，`e`大小写皆可), `1L`(`L`结尾，`L`大小写皆可，注意程序将忽略`L`, 如需定义`long`，需手动进行转化)
 > - 支持`+`, `-`, `*`, `/`, `%`运算及`()`使用子表达式
 > - 支持使用`(type)exp`将`exp`转成`type`类型。如果`exp`为整个表达式结果，可自动获取返回类型或变量类型进行转化
 > - 内置基本类型(除`boolean`), `String`, `BigDecimal`, `BigInteger`之间互相转化，见[ClassOverloading](core/src/main/java/org/yangxc/core/constant/ClassOverloading.java)
@@ -91,8 +93,11 @@ public class BaseServiceImpl implements BaseService {
 ```
 
 # TODO LIST
+> _斜体_为未计划，不一定会做
+
 - [ ] 支持将科学计数法转成普通数值
 - [ ] 自动化导入(消除`spi`使用)
+- [ ] 支持用户自定义代码
 - [ ] 支持自定义类的操作运算符重载
 - [ ] 支持变量调用方法
 - [ ] 支持调用静态方法
@@ -100,6 +105,8 @@ public class BaseServiceImpl implements BaseService {
 - [ ] 支持`Spring`自动注入(添加其示例)
 - [ ] 文档
 - [ ] 支持自定义操作符
+- [ ] _支持十六进制、八进制、二进制及转成十进制_
+- [ ] _支持泛型_
 - [ ] _内置其他数学类，如: 矩阵_
 - [ ] _转移至`java8`版本_
 - [ ] ...

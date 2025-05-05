@@ -16,6 +16,7 @@ public class Main {
         System.out.println(service.castAdd(new BigDecimal(1), 2));
         System.out.println(service.castAdd1(new BigDecimal(1), 2));
         System.out.println(service.parenthesis());
+        System.out.println(service.primitive());
         System.out.println(service.ignoreInteger());
         System.out.println(service.e());
     }

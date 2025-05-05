@@ -62,6 +62,9 @@ public class AstParse {
     }
 
     private Ast doParse(List<Ast> tokens, AstPhaseContext context) {
+        if (tokens.isEmpty()) {
+            return null;
+        }
         for (AstPhase phase : phases) {
             while (true) {
                 AstPhase.Result result = phase.handle(tokens, context);

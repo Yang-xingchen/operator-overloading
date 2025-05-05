@@ -2,8 +2,10 @@ package org.yangxc.core.handle.overloading;
 
 import org.yangxc.core.constant.ClassOverloading;
 
+import javax.lang.model.element.TypeElement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class OverloadingContext {
 
@@ -19,6 +21,10 @@ public class OverloadingContext {
 
     public void put(String type, OperatorOverloadingContext context) {
         map.computeIfAbsent(type, ClassOverloadingContext::new).set(context);
+    }
+
+    public Set<String> typeSet() {
+        return map.keySet();
     }
 
 }

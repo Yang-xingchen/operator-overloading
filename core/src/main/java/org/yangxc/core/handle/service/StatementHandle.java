@@ -12,6 +12,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import java.util.Map;
 
 public class StatementHandle {
 
@@ -69,6 +70,9 @@ public class StatementHandle {
             }
         });
         numberType = numberType != null ? numberType : NumberType.INHERIT;
+        if (exp == null || exp.isBlank()) {
+            throw new ElementException("Statement#exp is blank", expElement);
+        }
     }
 
     public TypeMirror getType() {
@@ -89,12 +93,12 @@ public class StatementHandle {
         symbolContext.put(new VariableContext(varName, type.toString(), index));
     }
 
-    public String write() {
+    public String write(Map<String, String> importMap) {
         String type;
         String simpleType;
         try {
             type = this.type.toString();
-            simpleType = ClassName.getSimpleName(type);
+            simpleType = importMap.getOrDefault(type, type);
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
@@ -115,7 +119,7 @@ public class StatementHandle {
         ExpVisitor.ExpContext expContext;
         ExpVisitor.ExpResult result;
         try {
-            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, symbolContext, numberType);
+            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, symbolContext, importMap, numberType);
             result = ast.accept(ExpVisitor.INSTANCE, expContext);
         } catch (ElementException e) {
             throw e;
@@ -124,14 +128,14 @@ public class StatementHandle {
         }
         try {
             if (type.equals(result.getType())) {
-                return expContext.append(";\n").toString();
+                return expContext.append(";").toString();
             }
             CastContext cast = result.cast(type);
             return switch (cast.type()) {
-                case CAST -> "(" + simpleType + ")" + expContext + ";\n";
-                case NEW -> "new " + simpleType + "(" + expContext + ");\n";
-                case METHOD -> expContext.append(".").append(cast.name()).append("()'\n").toString();
-                case STATIC_METHOD -> cast.name() + "(" + expContext + ");\n";
+                case CAST -> "(" + simpleType + ")" + expContext + ";";
+                case NEW -> "new " + simpleType + "(" + expContext + ");";
+                case METHOD -> expContext.append(".").append(cast.name()).append("()'").toString();
+                case STATIC_METHOD -> cast.name() + "(" + expContext + ");";
             };
         } catch (ElementException e) {
             throw e;

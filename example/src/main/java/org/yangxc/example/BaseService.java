@@ -41,6 +41,9 @@ public interface BaseService {
     @OperatorFunction("(1+2)*3")
     int parenthesis();
 
+    @OperatorFunction(value = "1.23+4e2", numberType = NumberType.PRIMITIVE)
+    double primitive();
+
     @OperatorFunction(".23+.0045")
     BigDecimal ignoreInteger();
 

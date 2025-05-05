@@ -9,6 +9,7 @@ import org.yangxc.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.core.handle.overloading.OverloadingContext;
 
+import java.util.Map;
 import java.util.function.Function;
 
 public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.ExpResult> {
@@ -23,21 +24,23 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         private final StringBuilder stringBuilder;
         private final OverloadingContext overloadingContext;
         private final SymbolContext symbolContext;
+        private final Map<String, String> importMap;
         private final NumberType numberType;
 
-        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType) {
+        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, SymbolContext symbolContext, Map<String, String> importMap, NumberType numberType) {
             this.stringBuilder = stringBuilder;
             this.overloadingContext = overloadingContext;
             this.symbolContext = symbolContext;
+            this.importMap = importMap;
             this.numberType = numberType;
         }
 
-        public ExpContext(OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType) {
-            this(new StringBuilder(), overloadingContext, symbolContext, numberType);
+        public ExpContext(OverloadingContext overloadingContext, SymbolContext symbolContext, NumberType numberType, Map<String, String> importMap) {
+            this(new StringBuilder(), overloadingContext, symbolContext, importMap, numberType);
         }
 
         private ExpContext copy(StringBuilder stringBuilder) {
-            return new ExpContext(stringBuilder, overloadingContext, symbolContext, numberType);
+            return new ExpContext(stringBuilder, overloadingContext, symbolContext, importMap, numberType);
         }
 
         public ExpContext append(String string) {
@@ -88,22 +91,34 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             return expContext.createResult(ClassName.BIG_DECIMAL);
         }
         if (expContext.numberType == NumberType.BIG_INTEGER) {
-            if (ast.getDecimal() != null) {
-                throw new UnsupportedOperationException("can't convert [" + ast + "] to BigInteger");
+            if (ast.getDecimal() != null || ast.getEInteger() != null) {
+                throw new UnsupportedOperationException("can't convert [" + ast.value() + "] to BigInteger");
             }
             expContext.append("new BigInteger(\"").append(ast.value()).append("\")");
             return expContext.createResult(ClassName.BIG_INTEGER);
         }
         if (expContext.numberType == NumberType.PRIMITIVE) {
             if (ast.isDouble()) {
-                expContext.append(ast.toString());
+                if (ast.isNegative()) {
+                    expContext.append("(").append(ast.value()).append(")");
+                } else {
+                    expContext.append(ast.value());
+                }
                 return expContext.createResult(ClassName.DOUBLE);
             }
             if (ast.isLong()) {
-                expContext.append(ast.toString()).append("L");
+                if (ast.isNegative()) {
+                    expContext.append("(").append(ast.value()).append("L)");
+                } else {
+                    expContext.append(ast.value()).append("L");
+                }
                 return expContext.createResult(ClassName.LONG);
             }
-            expContext.append(ast.toString());
+            if (ast.isNegative()) {
+                expContext.append("(").append(ast.value()).append(")");
+            } else {
+                expContext.append(ast.value());
+            }
             return expContext.createResult(ClassName.INT);
         }
         throw new UnsupportedOperationException("unknown numberType convert: " + expContext.numberType);
@@ -119,9 +134,9 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         }
         CastContext cast = res.cast(ast.getSourceType());
         switch (cast.type()) {
-            case CAST -> expContext.append("(").append(ClassName.getSimpleName(ast.getSourceType())).append(")")
+            case CAST -> expContext.append("(").append(expContext.importMap.getOrDefault(ast.getSourceType(), ast.getSourceType())).append(")")
                     .append(subExpContext.toString());
-            case NEW -> expContext.append("new ").append(ClassName.getSimpleName(ast.getSourceType()))
+            case NEW -> expContext.append("new ").append(expContext.importMap.getOrDefault(ast.getSourceType(), ast.getSourceType()))
                     .append("(").append(subExpContext.toString()).append(")");
             case METHOD -> expContext.append(subExpContext.toString())
                     .append(".").append(cast.name()).append("()");

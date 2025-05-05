@@ -5,6 +5,8 @@ import org.yangxc.core.annotation.OperatorService;
 import org.yangxc.core.ast.AstParse;
 import org.yangxc.core.handle.overloading.OverloadingContext;
 import org.yangxc.core.exception.ElementException;
+import org.yangxc.core.handle.writer.FunctionWriter;
+import org.yangxc.core.handle.writer.ServiceWriter;
 
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
@@ -12,6 +14,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -112,11 +115,15 @@ public class ServiceHandle {
     }
 
     private String getClassName() {
-        OperatorService operatorService = typeElement.getAnnotation(OperatorService.class);
-        if (operatorService == null || "".equals(operatorService.value())) {
-            return typeElement.getSimpleName() + "Impl";
-        }
-        return operatorService.value();
+        return value;
+    }
+
+    public NumberType getNumberType() {
+        return numberType;
+    }
+
+    public List<FunctionHandle> getFunctionHandles() {
+        return functionHandles;
     }
 
     public String getQualifiedName() {
@@ -127,31 +134,52 @@ public class ServiceHandle {
         return aPackage + "." + getClassName();
     }
 
-    public String write() {
+    public ServiceWriter write1() {
         try {
-            String pack = getPackage();
-            pack = pack != null ? ("package " + pack + ";\n") : "";
-            String imports = Stream.concat(
-                            functionHandles.stream().flatMap(functionHandle -> functionHandle.getUseClasses().stream()),
-                            this.imports.stream()
-                    )
-                    .distinct()
-                    .sorted()
-                    .reduce(new StringBuilder(),
-                            (sb, type) -> sb.append("import ").append(type).append(";\n"),
-                            StringBuilder::append)
-                    .toString();
-            String className = "public class " + getClassName() +" implements " + typeElement.getSimpleName() + " {\n";
-            String methods = functionHandles.stream()
-                    .map(FunctionHandle::toMethod)
-                    .map(s -> "\n" + TAB + "@Override\n" + s)
-                    .collect(Collectors.joining());
-            return pack + "\n" + imports + "\n" + className + methods + "}";
+            ServiceWriter serviceWriter = new ServiceWriter();
+            serviceWriter.setPack(getPackage());
+            serviceWriter.setClassName(getClassName());
+            serviceWriter.setInterfaceName(typeElement.getSimpleName().toString());
+            List<String> imports = Stream.concat(
+                    functionHandles.stream().flatMap(functionHandle -> functionHandle.getUseClasses().stream()),
+                    this.imports.stream()
+            ).toList();
+            Map<String, String> importMap = serviceWriter.handelImport(imports);
+            List<FunctionWriter> functionWriters = functionHandles.stream().map(functionHandle -> functionHandle.toWrite(importMap)).toList();
+            serviceWriter.setFunctionWrites(functionWriters);
+            return serviceWriter;
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
             throw new ElementException(e, typeElement);
         }
     }
+
+//    public String write() {
+//        try {
+//            String pack = getPackage();
+//            pack = pack != null ? ("package " + pack + ";\n") : "";
+//            String imports = Stream.concat(
+//                            functionHandles.stream().flatMap(functionHandle -> functionHandle.getUseClasses().stream()),
+//                            this.imports.stream()
+//                    )
+//                    .distinct()
+//                    .sorted()
+//                    .reduce(new StringBuilder(),
+//                            (sb, type) -> sb.append("import ").append(type).append(";\n"),
+//                            StringBuilder::append)
+//                    .toString();
+//            String className = "public class " + getClassName() +" implements " + typeElement.getSimpleName() + " {\n";
+//            String methods = functionHandles.stream()
+//                    .map(FunctionHandle::toMethod)
+//                    .map(s -> "\n" + TAB + "@Override\n" + s)
+//                    .collect(Collectors.joining());
+//            return pack + "\n" + imports + "\n" + className + methods + "}";
+//        } catch (ElementException e) {
+//            throw e;
+//        } catch (Throwable e) {
+//            throw new ElementException(e, typeElement);
+//        }
+//    }
 
 }

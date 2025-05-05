@@ -2,8 +2,10 @@ package org.yangxc.core.handle.overloading;
 
 import org.yangxc.core.annotation.Operator;
 
+import javax.lang.model.element.TypeElement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class ClassOverloadingContext {
 
@@ -28,6 +30,14 @@ public class ClassOverloadingContext {
 
     public String getTypeName() {
         return typeName;
+    }
+
+    public Set<Operator> supportOperator() {
+        return operatorMap.keySet();
+    }
+
+    public Set<String> supportCast() {
+        return castToMap.keySet();
     }
 
     public OperatorOverloadingContext operatorOverloading(Operator operator) {

@@ -26,7 +26,7 @@ public class ProcessorDebug {
                 @OperatorService(imports={BigDecimal.class})
                 public interface BaseService {
                 
-                    @OperatorFunction("(int)a + a + b")
+                    @OperatorFunction("a + a + (BigDecimal)b")
                     int castAdd1(BigDecimal a, int b);
                 
                 }
@@ -45,7 +45,7 @@ public class ProcessorDebug {
         DiagnosticCollector<JavaFileObject> listener = new DiagnosticCollector<>();
         try (StandardJavaFileManager fileManager = javaCompiler.getStandardFileManager(listener, Locale.CHINA, StandardCharsets.UTF_8)) {
             List<StringJavaObject> compilationUnits = List.of(new StringJavaObject("BaseService", code));
-            JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, listener, null, null, compilationUnits);
+            JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, listener, List.of("-AOperatorOverloadingLog=debug"), null, compilationUnits);
             task.setProcessors(List.of(processor));
             task.call();
             System.out.println("=== Diagnostics ===");

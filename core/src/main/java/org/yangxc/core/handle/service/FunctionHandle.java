@@ -8,6 +8,7 @@ import org.yangxc.core.constant.ClassName;
 import org.yangxc.core.handle.overloading.CastContext;
 import org.yangxc.core.handle.overloading.OverloadingContext;
 import org.yangxc.core.exception.ElementException;
+import org.yangxc.core.handle.writer.FunctionWriter;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeKind;
@@ -16,8 +17,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.yangxc.core.handle.service.ServiceHandle.TAB;
 
 public class FunctionHandle {
 
@@ -82,8 +81,8 @@ public class FunctionHandle {
                         }, null);
                     }
                 });
-        if (value == null) {
-            throw new ElementException("OperatorFunction#value not found", element);
+        if (value == null || value.isBlank()) {
+            throw new ElementException("OperatorFunction#value is blank", element);
         }
         numberType = numberType != null ? numberType : NumberType.INHERIT;
         statementHandles = statementHandles != null ? statementHandles : List.of();
@@ -114,6 +113,18 @@ public class FunctionHandle {
         }
     }
 
+    public ExecutableElement getElement() {
+        return element;
+    }
+
+    public String getExp() {
+        return value;
+    }
+
+    public NumberType getNumberType() {
+        return numberType;
+    }
+
     public Set<String> getUseClasses() {
         return Stream.of(
                 Stream.of(element.getReturnType())
@@ -132,23 +143,32 @@ public class FunctionHandle {
         ).flatMap(Function.identity()).collect(Collectors.toSet());
     }
 
-    public String toMethod() {
+    public FunctionWriter toWrite(Map<String, String> importMap) {
         try {
-            String parameters = element.getParameters()
-                    .stream()
-                    .map(e -> e.asType() + " " + e.getSimpleName())
-                    .collect(Collectors.joining(", "));
-            StringBuilder body = new StringBuilder();
-            for (StatementHandle statementHandle : statementHandles) {
-                body.append(TAB).append(TAB).append(statementHandle.write());
+            FunctionWriter write = new FunctionWriter();
+            String returnType = element.getReturnType().toString();
+            write.setReturnType(importMap.getOrDefault(returnType, returnType));
+            List<FunctionWriter.Param> params = element.getParameters().stream().map(variableElement -> {
+                try {
+                    String type = variableElement.asType().toString();
+                    return new FunctionWriter.Param(importMap.getOrDefault(type, type), variableElement.getSimpleName().toString());
+                } catch (ElementException e) {
+                    throw e;
+                } catch (Throwable e) {
+                    throw new ElementException(e, variableElement);
+                }
+            }).toList();
+            write.setName(element.getSimpleName().toString());
+            write.setParams(params);
+            write.setThrowList(element.getThrownTypes().stream().map(TypeMirror::toString).map(throwType -> importMap.getOrDefault(throwType, throwType)).toList());
+            List<String> statementLine = statementHandles.stream().map(statementHandle -> statementHandle.write(importMap)).toList();
+            StringBuilder retLine = new StringBuilder();
+            if (element.getReturnType().getKind() != TypeKind.VOID) {
+                retLine.append("return ");
             }
-            TypeMirror returnType = element.getReturnType();
-            if (returnType.getKind() != TypeKind.VOID) {
-                body.append(TAB).append(TAB).append("return ").append(getExpString(ast, returnType));
-            }
-            return TAB + "public " + returnType + " " + element.getSimpleName() + "(" + parameters + ") {\n" +
-                    body +
-                    TAB + "}\n";
+            retLine.append(getExpString(ast, importMap, element.getReturnType()));
+            write.setBodyLines(Stream.concat(statementLine.stream(), Stream.of(retLine.toString())).toList());
+            return write;
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
@@ -156,21 +176,46 @@ public class FunctionHandle {
         }
     }
 
-    private String getExpString(Ast ast, TypeMirror resType) {
-        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, symbolContext, numberType);
+    private String getExpString(Ast ast, Map<String, String> importMap, TypeMirror resType) {
+        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, symbolContext, numberType, importMap);
         ExpVisitor.ExpResult result = ast.accept(ExpVisitor.INSTANCE, expContext);
         String type = resType.toString();
         if (Objects.equals(result.getType(), type)) {
-            return expContext.append(";\n").toString();
+            return expContext.append(";").toString();
         }
         CastContext cast = result.cast(type);
-        String simpleType = ClassName.getSimpleName(type);
+        String simpleType = importMap.getOrDefault(type, type);
         return switch (cast.type()) {
-            case CAST -> "(" + simpleType + ")" + expContext + ";\n";
-            case NEW -> "new " + simpleType + "(" + expContext + ");\n";
-            case METHOD -> expContext.append(".").append(cast.name()).append("();\n").toString();
-            case STATIC_METHOD -> cast.name() + "(" + expContext + ");\n";
+            case CAST -> "(" + simpleType + ")" + expContext + ";";
+            case NEW -> "new " + simpleType + "(" + expContext + ");";
+            case METHOD -> expContext.append(".").append(cast.name()).append("();").toString();
+            case STATIC_METHOD -> cast.name() + "(" + expContext + ");";
         };
     }
+
+//    public String toMethod() {
+//        try {
+//            String parameters = element.getParameters()
+//                    .stream()
+//                    .map(e -> e.asType() + " " + e.getSimpleName())
+//                    .collect(Collectors.joining(", "));
+//            StringBuilder body = new StringBuilder();
+//            for (StatementHandle statementHandle : statementHandles) {
+//                body.append(TAB).append(TAB).append(statementHandle.write());
+//            }
+//            TypeMirror returnType = element.getReturnType();
+//            if (returnType.getKind() != TypeKind.VOID) {
+//                body.append(TAB).append(TAB).append("return ");
+//            }
+//            body.append(getExpString(ast, returnType));
+//            return TAB + "public " + returnType + " " + element.getSimpleName() + "(" + parameters + ") {\n" +
+//                    body +
+//                    TAB + "}\n";
+//        } catch (ElementException e) {
+//            throw e;
+//        } catch (Throwable e) {
+//            throw new ElementException(e, element);
+//        }
+//    }
 
 }
