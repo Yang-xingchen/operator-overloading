@@ -12,17 +12,17 @@
 
 1. 配置spi(后续考虑移除该步骤)，参考见[此处](example/src/main/resources/META-INF/services/javax.annotation.processing.Processor): 
    1. 添加`META-INF/services/javax.annotation.processing.Processor`文件，若已存在则忽略该步骤
-   2. 在该文件内添加`org.yangxc.core.processor.ServiceProcessor`(作为单独一行)
+   2. 在该文件内添加`org.yangxc.operatoroverloading.core.processor.ServiceProcessor`(作为单独一行)
 2. 定义服务接口:
     ```
    @OperatorService
    public intefact BaseService {}
    ```
    1. 该类型必须为接口
-   2. 必须添加`org.yangxc.core.annotation.OperatorService`注解，具体参数见注释[OperatorService.java](core/src/main/java/org/yangxc/core/annotation/OperatorService.java)
-   3. 定义方法, 添加`org.yangxc.core.annotation.OperatorFunction`注解，具体参数见注释[OperatorFunction.java](core/src/main/java/org/yangxc/core/annotation/OperatorFunction.java)
+   2. 必须添加`annotation.org.yangxc.operatoroverloading.core.OperatorService`注解，具体参数见注释[OperatorService.java](core/src/main/java/org/yangxc/core/annotation/OperatorService.java)
+   3. 定义方法, 添加`annotation.org.yangxc.operatoroverloading.core.OperatorFunction`注解，具体参数见注释[OperatorFunction.java](core/src/main/java/org/yangxc/core/annotation/OperatorFunction.java)
    4. _无需实现类_
-3. 获取实现: `org.yangxc.core.Overloading.get(BaseService.class)`
+3. 获取实现: `org.yangxc.operatoroverloading.core.Overloading.get(BaseService.class)`
 
 ## Example & Explain
 > 该示例仅作为展示功能，如果你仔细分析，会发现无论参数如何该示例返回结果总是相同的，但作为示例已经足够
@@ -97,7 +97,6 @@ public class BaseServiceImpl implements BaseService {
 
 - [ ] 支持将科学计数法转成普通数值
 - [ ] 自动化导入(消除`spi`使用)
-- [ ] 支持用户自定义代码
 - [ ] 支持自定义类的操作运算符重载
 - [ ] 支持变量调用方法
 - [ ] 支持调用静态方法
