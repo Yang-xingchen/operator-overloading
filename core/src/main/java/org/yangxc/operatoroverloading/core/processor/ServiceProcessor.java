@@ -1,6 +1,10 @@
 package org.yangxc.operatoroverloading.core.processor;
 
+import org.yangxc.operatoroverloading.core.annotation.Operator;
 import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
+import org.yangxc.operatoroverloading.core.annotation.OperatorService;
+import org.yangxc.operatoroverloading.core.constant.ClassOverloading;
+import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.service.FunctionHandle;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.service.ServiceHandle;
@@ -20,17 +24,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@SupportedAnnotationTypes("org.yangxc.operatoroverloading.core.annotation.OperatorService")
+@SupportedAnnotationTypes({ServiceProcessor.SERVICE_ANNOTATION, ServiceProcessor.OPERATOR_ANNOTATION})
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedOptions({ServiceProcessor.OPERATOR_OVERLOADING_LOG})
 public class ServiceProcessor extends AbstractProcessor {
 
     private LogHandle logHandle;
-    private String msgLevel;
+
+    public static final String SERVICE_ANNOTATION = "org.yangxc.operatoroverloading.core.annotation.OperatorService";
+    public static final String OPERATOR_ANNOTATION = "org.yangxc.operatoroverloading.core.annotation.OperatorClass";
+
+    public static final String OPERATOR_OVERLOADING_LOG = "OperatorOverloadingLog";
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        logHandle = new LogHandle(processingEnv.getMessager(), processingEnv.getOptions().get("OperatorOverloadingLog"));
+        logHandle = new LogHandle(processingEnv.getMessager(), processingEnv.getOptions().get(OPERATOR_OVERLOADING_LOG));
     }
 
     @Override
@@ -61,9 +70,9 @@ public class ServiceProcessor extends AbstractProcessor {
                 handle.setFunctionContexts(functionHandles);
                 handles.add(handle);
             } catch (ElementException e) {
-                processingEnv.getMessager().printError("init error: " + e.getMessage(), e.getElement());
+                processingEnv.getMessager().printError("init service error: " + e.getMessage(), e.getElement());
             } catch (Exception e) {
-                processingEnv.getMessager().printError("init error: " + e.getMessage(), rootElement);
+                processingEnv.getMessager().printError("init service error: " + e.getMessage(), rootElement);
             }
         }
         logHandle.postAllInit(handles);
@@ -71,9 +80,22 @@ public class ServiceProcessor extends AbstractProcessor {
     }
 
     public OverloadingContext getOverloading(RoundEnvironment roundEnv) {
-        // TODO
         OverloadingContext context = new OverloadingContext();
-
+        for (Element rootElement : roundEnv.getRootElements()) {
+            try {
+                if (rootElement instanceof TypeElement typeElement) {
+                    typeElement.getEnclosedElements()
+                            .stream()
+                            .filter(element -> element.getKind() == ElementKind.METHOD || element.getKind() == ElementKind.CONSTRUCTOR)
+                            .map(ExecutableElement.class::cast)
+                            .forEach(executableElement -> context.setup(executableElement, typeElement));
+                }
+            } catch (ElementException e) {
+                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), e.getElement());
+            } catch (Exception e) {
+                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), rootElement);
+            }
+        }
         logHandle.postAllOverloading(context);
         return context;
     }

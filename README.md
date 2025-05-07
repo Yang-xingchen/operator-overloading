@@ -24,8 +24,8 @@
    4. _无需实现类_
 3. 获取实现: `org.yangxc.operatoroverloading.core.Overloading.get(BaseService.class)`
 
-## Example & Explain
-> 该示例仅作为展示功能，如果你仔细分析，会发现无论参数如何该示例返回结果总是相同的，但作为示例已经足够
+## Example1 & Explain
+> 该示例仅作为展示内置的运算功能，如果你仔细分析，会发现无论参数如何该示例返回结果总是相同的，但作为示例已经足够
 
 定义:
 ```java
@@ -45,7 +45,7 @@ public interface BaseService {                                                  
 
 使用:
 ```java
-BaseService service = Overloading.get(BaseService.class);                                                           // 8
+BaseService service = Overloading.create(BaseService.class);                                                           // 8
 // 结果为: -1234.5678
 double res = service.test(1);                                                                                       // 9
 ```
@@ -92,14 +92,91 @@ public class BaseServiceImpl implements BaseService {
 }
 ```
 
+## Example2 & Explain
+> 该示例展示自定义重载运算符
+
+实例:
+```java
+@OperatorClass                                          // 1
+public class Complex {                                  // 2
+    // 省略字段
+    @Cast                                               // 3
+    public Complex(Complex2 from) {                     // 4
+        // 设置字段
+    }
+    
+    @Cast                                               // 5 
+    public Complex2 to() {                              // 6
+        Complex2 res;
+        // 省略转换操作
+        return res;
+    }
+
+    @Cast                                               // 7
+    public static Complex2 to(Complex3 complex) {       // 8
+        Complex2 res;
+        // 省略转换操作
+        return res;
+    }
+
+    @Operator(OperatorType.ADD)                         // 9
+    public Complex add(Complex b) {                     // 10
+        Complex res;
+        // 省略运算操作
+        return res;
+    }
+
+    @Operator(OperatorType.ADD)                         // 11
+    public static Complex add(Complex a, Complex b) {   // 12
+        Complex res;
+        // 省略运算操作
+        return res;
+    }
+    // 省略其他操作
+    // 省略getter、setter、toString等方法
+}
+```
+
+- 在`2`处定义一个实体
+  - 添加`@OperatorClass`注解声明该类注册到程序处理中
+- 在`4`处添加转化构造函数，可使用该构造函数将`Complex2`转成`Complex`。该示例中为将`(Complex)a`编译为`new Complex(a)`
+  - 需要在`3`处使用`@Cast`声明该方法用于转换
+  - 构造方法参数只能有一个，表示从那个类转成当前类
+- 在`6`处添加转化方法，可使用该构造函数将`Complex`转成`Complex2`。该示例中为将`(Complex2)a`编译为`a.to()`
+  - 需要在`5`处使用`@Cast`声明该方法用于转换
+  - 方法为实例方法
+  - 方法无参数，使用当前类作为要转换的类
+  - 方法返回值为转换结果的类
+- 在`8`处添加静态转化方法，可使用该静态转化方法将`Complex3`转成`Complex2`。该示例中为将`(Complex2)a`编译为`Complex.to(a)`
+  - 需要在`7`处使用`@Cast`声明该方法用于转换
+  - 方法为静态方法
+  - 该方法可定义在其他类中(如工具类，处理非该项目的需要操作符重载的类)，此时，该类也必须添加`@OperatorClass`注解
+  - 方法参数只能有一个，表示从那个类转换
+  - 方法返回值为转换结果的类
+- 在`10`处定义运算方法，可使用该方法进行运算操作。该示例中为将`a+b`编译为`a.add(b)`
+  - 需要在`9`处使用`@Operator`声明方法操作类型
+  - 方法为实例方法
+  - 方法参数只能有一个，表示操作的第二个对象
+  - 方法返回值为计算结果
+- 在`12`处添加静态运算方法，可使用该方法进行运算操作。该示例中为将`a+b`编译为`Complex.add(a, b)`
+  - 需要在`11`处使用`@Operator`声明方法操作类型
+  - 方法为静态方法
+  - 该方法可定义在其他类中(如工具类，处理非该项目的需要操作符重载的类)，此时，该类也必须添加`@OperatorClass`注解
+  - 方法参数必须为2个且相同，表示操作的两个对象
+  - 方法返回值为计算结果
+- 运算操作全局只需要一个，如定义多个，程序选择其中之一处理
+- 之后可类似于`Example1`中使用该类进行运算及转换操作
+
 # TODO LIST
-> _斜体_为未计划，不一定会做
+> _斜体_为未计划，不一定会实现
 
 - [ ] 支持将科学计数法转成普通数值
 - [ ] 自动化导入(消除`spi`使用)
-- [ ] 支持自定义类的操作运算符重载
+- [ ] 静态方法导入
 - [ ] 支持变量调用方法
 - [ ] 支持调用静态方法
+- [ ] 支持变量访问`public`字段
+- [ ] 支持定义实例字段
 - [ ] 支持条件分支
 - [ ] 支持`Spring`自动注入(添加其示例)
 - [ ] 文档

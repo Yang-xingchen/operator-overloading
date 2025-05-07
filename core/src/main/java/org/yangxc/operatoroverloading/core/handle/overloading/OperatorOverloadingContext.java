@@ -1,19 +1,19 @@
 package org.yangxc.operatoroverloading.core.handle.overloading;
 
-import org.yangxc.operatoroverloading.core.annotation.Operator;
-import org.yangxc.operatoroverloading.core.constant.OperatorType;
+import org.yangxc.operatoroverloading.core.annotation.OperatorType;
+import org.yangxc.operatoroverloading.core.constant.OperatorMethodType;
 
 import java.util.Objects;
 
 public final class OperatorOverloadingContext {
 
-    private final Operator operator;
-    private final OperatorType type;
+    private final OperatorType operator;
+    private final OperatorMethodType type;
     private final String name;
     private final String paramType;
     private final String resultType;
 
-    public OperatorOverloadingContext(Operator operator, OperatorType type, String name, String paramType, String resultType) {
+    public OperatorOverloadingContext(OperatorType operator, OperatorMethodType type, String name, String paramType, String resultType) {
         this.operator = operator;
         this.type = type;
         this.name = name;
@@ -21,11 +21,11 @@ public final class OperatorOverloadingContext {
         this.resultType = resultType;
     }
 
-    public Operator operator() {
+    public OperatorType operator() {
         return operator;
     }
 
-    public OperatorType type() {
+    public OperatorMethodType type() {
         return type;
     }
 

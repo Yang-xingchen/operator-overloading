@@ -6,11 +6,11 @@ import java.lang.reflect.Constructor;
 
 public class Overloading {
 
-    public static <T> T get(Class<T> service) throws ReflectiveOperationException {
-        return get(service, Overloading.class.getClassLoader());
+    public static <T> T create(Class<T> service) throws ReflectiveOperationException {
+        return create(service, Overloading.class.getClassLoader());
     }
 
-    public static <T> T get(Class<T> service, ClassLoader classLoader) throws ReflectiveOperationException {
+    public static <T> T create(Class<T> service, ClassLoader classLoader) throws ReflectiveOperationException {
         Class<?> implClass = classLoader.loadClass(getName(service));
         Constructor<?> constructor = implClass.getConstructor();
         return (T) constructor.newInstance();

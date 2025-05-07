@@ -10,6 +10,7 @@ import org.yangxc.operatoroverloading.core.exception.ElementException;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +107,7 @@ public class StatementHandle {
         this.overloadingContext = overloadingContext;
         this.variableContexts = new ArrayList<>(variableContexts);
         setupAst(astParse, imports);
-        return new VariableContext(varName, type.toString(), index);
+        return type.getKind() != TypeKind.VOID ? new VariableContext(varName, type.toString(), index) : null;
     }
 
     private void setupAst(AstParse astParse, List<String> imports) {
@@ -135,11 +136,13 @@ public class StatementHandle {
         }
         StringBuilder stringBuilder = new StringBuilder();
         try {
-            stringBuilder
-                    .append(simpleType)
-                    .append(" ")
-                    .append(varName)
-                    .append(" = ");
+            if (this.type.getKind() != TypeKind.VOID) {
+                stringBuilder
+                        .append(simpleType)
+                        .append(" ")
+                        .append(varName)
+                        .append(" = ");
+            }
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {

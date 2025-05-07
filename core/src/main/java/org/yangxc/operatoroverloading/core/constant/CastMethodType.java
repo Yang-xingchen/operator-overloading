@@ -1,6 +1,6 @@
 package org.yangxc.operatoroverloading.core.constant;
 
-public enum CastType {
+public enum CastMethodType {
 
     /**
      * (newType)var

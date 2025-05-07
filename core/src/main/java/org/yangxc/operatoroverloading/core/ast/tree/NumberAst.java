@@ -67,10 +67,11 @@ public class NumberAst implements Ast {
             return true;
         }
         BigInteger value = new BigInteger(integer.getValue());
-        if (value.compareTo(MAX_LONG) > 0 || value.compareTo(MIN_LONG) < 0) {
-            return true;
-        }
-        return false;
+        return value.compareTo(MAX_LONG) > 0 || value.compareTo(MIN_LONG) < 0;
+    }
+
+    public boolean isDecimal() {
+        return decimal != null || eInteger != null;
     }
 
     @Override
@@ -81,7 +82,7 @@ public class NumberAst implements Ast {
     public String value() {
         String res;
         if (decimal == null && eInteger == null) {
-            res = (sign != null ? sign.getValue() : "") + integer.getValue() + ".0";
+            res = (sign != null ? sign.getValue() : "") + integer.getValue();
         } else {
             res = (sign != null ? sign.getValue() : "") +
                     integer.getValue() + (decimal != null ? ("." + decimal.getValue()) : "") +

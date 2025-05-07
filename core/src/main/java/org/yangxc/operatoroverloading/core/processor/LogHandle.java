@@ -62,7 +62,16 @@ public class LogHandle {
     }
 
     public void postAllOverloading(OverloadingContext context) {
-        if (DEBUG.equals(level) || INFO.equals(level)) {
+        if (DEBUG.equals(level)) {
+            Set<String> msgSet = context.typeSet()
+                    .stream()
+                    .map(context::get)
+                    .map(overloadContext -> "{\"type\": \"" + overloadContext.getTypeName() + "\", " +
+                            "\"operator\": \"" + overloadContext.supportOperator().stream().map(t -> t.symbol).collect(Collectors.joining()) + "\", " +
+                            "\"castTo\": [" + overloadContext.supportCast().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ")) + "]}")
+                    .collect(Collectors.toSet());
+            messager.printNote("load overloads: " + msgSet);
+        } else if (INFO.equals(level)) {
             messager.printNote("load overloads: " + context.typeSet());
         }
     }

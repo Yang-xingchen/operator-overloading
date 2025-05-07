@@ -1,6 +1,6 @@
 package org.yangxc.operatoroverloading.core.constant;
 
-public enum OperatorType {
+public enum OperatorMethodType {
 
     /**
      * a+b

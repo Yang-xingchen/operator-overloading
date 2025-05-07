@@ -91,7 +91,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             return expContext.createResult(ClassName.BIG_DECIMAL);
         }
         if (expContext.numberType == NumberType.BIG_INTEGER) {
-            if (ast.getDecimal() != null || ast.getEInteger() != null) {
+            if (ast.isDecimal()) {
                 throw new UnsupportedOperationException("can't convert [" + ast.value() + "] to BigInteger");
             }
             expContext.append("new BigInteger(\"").append(ast.value()).append("\")");
@@ -99,10 +99,11 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         }
         if (expContext.numberType == NumberType.PRIMITIVE) {
             if (ast.isDouble()) {
+                String value = ast.value() + (ast.isDecimal() ? "" : ".0");
                 if (ast.isNegative()) {
-                    expContext.append("(").append(ast.value()).append(")");
+                    expContext.append("(").append(value).append(")");
                 } else {
-                    expContext.append(ast.value());
+                    expContext.append(value);
                 }
                 return expContext.createResult(ClassName.DOUBLE);
             }
@@ -165,7 +166,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
                 yield expContext.createResult(overloading.resultType());
             }
             case STATIC_METHOD -> {
-                expContext.append(overloading.name()).append(subExpContext.toString()).append(", ");
+                expContext.append(overloading.name()).append("(").append(subExpContext.toString()).append(", ");
                 ast.getRight().accept(this, expContext);
                 expContext.append(")");
                 yield expContext.createResult(overloading.resultType());

@@ -1,6 +1,6 @@
 package org.yangxc.operatoroverloading.core.handle.overloading;
 
-import org.yangxc.operatoroverloading.core.annotation.Operator;
+import org.yangxc.operatoroverloading.core.annotation.OperatorType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +10,7 @@ public class ClassOverloadingContext {
 
     private final String typeName;
 
-    private Map<Operator, OperatorOverloadingContext> operatorMap = new HashMap<>();
+    private Map<OperatorType, OperatorOverloadingContext> operatorMap = new HashMap<>();
     private Map<String, CastContext> castToMap = new HashMap<>();
 
     public ClassOverloadingContext(String typeName) {
@@ -31,7 +31,7 @@ public class ClassOverloadingContext {
         return typeName;
     }
 
-    public Set<Operator> supportOperator() {
+    public Set<OperatorType> supportOperator() {
         return operatorMap.keySet();
     }
 
@@ -39,7 +39,7 @@ public class ClassOverloadingContext {
         return castToMap.keySet();
     }
 
-    public OperatorOverloadingContext operatorOverloading(Operator operator) {
+    public OperatorOverloadingContext operatorOverloading(OperatorType operator) {
         if (operatorMap.containsKey(operator)) {
             return operatorMap.get(operator);
         }
@@ -47,23 +47,23 @@ public class ClassOverloadingContext {
     }
 
     public OperatorOverloadingContext getAdd() {
-        return operatorOverloading(Operator.ADD);
+        return operatorOverloading(OperatorType.ADD);
     }
 
     public OperatorOverloadingContext getSubtract() {
-        return operatorOverloading(Operator.SUBTRACT);
+        return operatorOverloading(OperatorType.SUBTRACT);
     }
 
     public OperatorOverloadingContext getMultiply() {
-        return operatorOverloading(Operator.MULTIPLY);
+        return operatorOverloading(OperatorType.MULTIPLY);
     }
 
     public OperatorOverloadingContext getDivide() {
-        return operatorOverloading(Operator.DIVIDE);
+        return operatorOverloading(OperatorType.DIVIDE);
     }
 
     public OperatorOverloadingContext getRemainder() {
-        return operatorOverloading(Operator.REMAINDER);
+        return operatorOverloading(OperatorType.REMAINDER);
     }
 
     public CastContext cast(String toTypeName) {

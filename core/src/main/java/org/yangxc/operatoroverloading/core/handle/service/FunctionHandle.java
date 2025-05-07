@@ -134,7 +134,12 @@ public class FunctionHandle {
             if (this.docType == DocType.EXP || this.docType == DocType.DOC_EXP) {
                 exp = new ArrayList<>();
                 exp.add(" <pre>");
-                statementHandles.stream().map(s -> "   " + s.getVarName() + " = " + s.getExp()).forEach(exp::add);
+                statementHandles.stream().map(s -> {
+                    if (s.getType().getKind() == TypeKind.VOID) {
+                        return s.getExp();
+                    }
+                    return "   " + s.getVarName() + " = " + s.getExp();
+                }).forEach(exp::add);
                 exp.add("   return " + value);
                 exp.add(" </pre>");
                 if (this.docType == DocType.EXP) {
@@ -198,7 +203,9 @@ public class FunctionHandle {
         try {
             for (StatementHandle statementHandle : statementHandles) {
                 VariableContext variableContext = statementHandle.setup(astParse, overloadingContext, variableContexts, imports, this.numberType);
-                variableContexts.add(variableContext);
+                if (variableContext != null) {
+                    variableContexts.add(variableContext);
+                }
             }
         } catch (ElementException e) {
             throw e;
