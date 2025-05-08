@@ -17,6 +17,8 @@ import javax.lang.model.util.Elements;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ServiceHandle {
@@ -175,10 +177,10 @@ public class ServiceHandle {
             context.setPack(getPackage());
             context.setClassName(getClassName());
             context.setInterfaceName(typeElement.getSimpleName().toString());
-            List<String> imports = Stream.concat(
-                    functionHandles.stream().flatMap(functionHandle -> functionHandle.getUseClasses().stream()),
+            Set<String> imports = Stream.concat(
+                    functionHandles.stream().flatMap(FunctionHandle::getUseClasses),
                     this.imports.stream()
-            ).toList();
+            ).collect(Collectors.toSet());
             Map<String, String> importMap = context.handelImport(imports);
             context.setFunctionWrites(functionHandles.stream().map(functionHandle -> functionHandle.writerContext(importMap)).toList());
             return context;

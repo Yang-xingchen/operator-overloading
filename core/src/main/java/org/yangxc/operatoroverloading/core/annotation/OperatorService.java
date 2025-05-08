@@ -20,7 +20,9 @@ public @interface OperatorService {
     NumberType numberType() default NumberType.INHERIT;
 
     /**
-     * 导入，可在表达式中使用简单名称进行强转
+     * 导入
+     * 可在表达式中使用简单名称进行强转
+     * 使用静态方法编译后可使用简单名称调用
      */
     Class<?>[] imports() default {};
 

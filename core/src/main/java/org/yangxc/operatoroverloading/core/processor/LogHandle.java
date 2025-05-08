@@ -67,8 +67,8 @@ public class LogHandle {
                     .stream()
                     .map(context::get)
                     .map(overloadContext -> "{\"type\": \"" + overloadContext.getTypeName() + "\", " +
-                            "\"operator\": \"" + overloadContext.supportOperator().stream().map(t -> t.symbol).collect(Collectors.joining()) + "\", " +
-                            "\"castTo\": [" + overloadContext.supportCast().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ")) + "]}")
+                            "\"operator\": \"" + overloadContext.supportOperator().stream().sorted().map(t -> t.symbol).collect(Collectors.joining()) + "\", " +
+                            "\"castTo\": [" + overloadContext.supportCast().stream().sorted().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ")) + "]}")
                     .collect(Collectors.toSet());
             messager.printNote("load overloads: " + msgSet);
         } else if (INFO.equals(level)) {

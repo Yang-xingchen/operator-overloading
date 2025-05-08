@@ -1,7 +1,10 @@
 package org.yangxc.operatoroverloading.example;
 
+import org.yangxc.operatoroverloading.core.annotation.Cast;
+
 public record Complex2(double real, double imaginary) {
 
+    @Cast
     @Override
     public String toString() {
         if (real == 0) {

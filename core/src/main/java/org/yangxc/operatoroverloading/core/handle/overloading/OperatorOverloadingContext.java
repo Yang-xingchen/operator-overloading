@@ -9,13 +9,15 @@ public final class OperatorOverloadingContext {
 
     private final OperatorType operator;
     private final OperatorMethodType type;
+    private final String className;
     private final String name;
     private final String paramType;
     private final String resultType;
 
-    public OperatorOverloadingContext(OperatorType operator, OperatorMethodType type, String name, String paramType, String resultType) {
+    public OperatorOverloadingContext(OperatorType operator, OperatorMethodType type, String className, String name, String paramType, String resultType) {
         this.operator = operator;
         this.type = type;
+        this.className = className;
         this.name = name;
         this.paramType = paramType;
         this.resultType = resultType;
@@ -27,6 +29,10 @@ public final class OperatorOverloadingContext {
 
     public OperatorMethodType type() {
         return type;
+    }
+
+    public String className() {
+        return className;
     }
 
     public String name() {

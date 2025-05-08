@@ -50,9 +50,9 @@ public class OverloadingContext {
                                             }
                                         }, null);
                                         if (isStatic) {
-                                            put(new OperatorOverloadingContext(operatorType, OperatorMethodType.STATIC_METHOD, typeName + "." + functionName, paramType, resultType));
+                                            put(new OperatorOverloadingContext(operatorType, OperatorMethodType.STATIC_METHOD, typeName, functionName, paramType, resultType));
                                         } else {
-                                            put(new OperatorOverloadingContext(operatorType, OperatorMethodType.METHOD, functionName, paramType, resultType));
+                                            put(new OperatorOverloadingContext(operatorType, OperatorMethodType.METHOD, null, functionName, paramType, resultType));
                                         }
                                         addOperator.set(true);
                                     }
@@ -71,11 +71,11 @@ public class OverloadingContext {
                     .findAny()
                     .ifPresent(annotation -> {
                         if (element.getKind() == ElementKind.CONSTRUCTOR) {
-                            put(new CastContext(paramType, CastMethodType.NEW, "", typeName));
+                            put(new CastContext(paramType, CastMethodType.NEW, null, "", typeName));
                         } else if (isStatic) {
-                            put(new CastContext(paramType, CastMethodType.STATIC_METHOD, typeName + "." + functionName, resultType));
+                            put(new CastContext(paramType, CastMethodType.STATIC_METHOD, typeName, functionName, resultType));
                         } else {
-                            put(new CastContext(typeName, CastMethodType.METHOD, functionName, resultType));
+                            put(new CastContext(typeName, CastMethodType.METHOD, null, functionName, resultType));
                         }
                         addCast.set(true);
                     });

@@ -1,5 +1,6 @@
 package org.yangxc.operatoroverloading.example;
 
+import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
 import org.yangxc.operatoroverloading.core.annotation.OperatorService;
 
@@ -12,7 +13,7 @@ public interface ComplexService {
     @OperatorFunction("a+b+c")
     Complex2 add(Complex2 a, Complex2 b, Complex2 c);
 
-    @OperatorFunction("a+(Complex)1")
+    @OperatorFunction(value = "a+(Complex)1", numberType = NumberType.BIG_DECIMAL)
     Complex cast(Complex a);
 
     @OperatorFunction("a+(Complex)b")

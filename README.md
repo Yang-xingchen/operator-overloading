@@ -2,7 +2,7 @@
 实现Java版本的操作符重载功能。以运算符方式使用`BigDecimal`及`BigInteger`类库。
 
 > [!IMPORTANT]
-> 目前还在早期demo阶段，请勿使用于生产环境，欢迎提交issues及PR
+> 目前已完成核心功能，使用于生产环境请经过测试，欢迎提交issues及PR
 
 使用示例: [Main.java](example/src/main/java/org/yangxc/example/Main.java)
 
@@ -167,12 +167,17 @@ public class Complex {                                  // 2
 - 运算操作全局只需要一个，如定义多个，程序选择其中之一处理
 - 之后可类似于`Example1`中使用该类进行运算及转换操作
 
+> [!TIP]
+> 为避免非预期情况发生，重载操作符的类最好设计成不可变类。类似于`DDD`中的`ValueObject`概念。
+
+> [!TIP]
+> 为避免非预期情况发生，操作数的类型及返回类型建议都相同。
+
 # TODO LIST
 > _斜体_为未计划，不一定会实现
 
 - [ ] 支持将科学计数法转成普通数值
 - [ ] 自动化导入(消除`spi`使用)
-- [ ] 静态方法导入
 - [ ] 支持变量调用方法
 - [ ] 支持调用静态方法
 - [ ] 支持变量访问`public`字段

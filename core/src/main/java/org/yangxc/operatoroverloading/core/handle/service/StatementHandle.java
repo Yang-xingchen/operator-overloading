@@ -3,9 +3,9 @@ package org.yangxc.operatoroverloading.core.handle.service;
 import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.ast.tree.Ast;
+import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
-import org.yangxc.operatoroverloading.core.exception.ElementException;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -15,8 +15,10 @@ import javax.lang.model.type.TypeMirror;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StatementHandle {
 
@@ -123,6 +125,16 @@ public class StatementHandle {
         }
     }
 
+    public Stream<String> getUseClasses() {
+        Map<String, VariableContext> variableContextMap = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
+        return Stream.of(
+                Stream.of(type).filter(typeMirror -> !typeMirror.getKind().isPrimitive()).map(TypeMirror::toString),
+                parse
+                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContextMap, numberType)).stream()
+                        : Stream.<String>empty()
+        ).flatMap(Function.identity());
+    }
+
     public String write(Map<String, String> importMap) {
         String type;
         String simpleType;
@@ -171,7 +183,8 @@ public class StatementHandle {
                 case CAST -> "(" + simpleType + ")" + expContext + ";";
                 case NEW -> "new " + simpleType + "(" + expContext + ");";
                 case METHOD -> expContext.append(".").append(cast.name()).append("()'").toString();
-                case STATIC_METHOD -> cast.name() + "(" + expContext + ");";
+                case STATIC_METHOD -> importMap.getOrDefault(cast.className(), cast.className()) + "." + cast.name() +
+                        "(" + expContext + ");";
             };
         } catch (ElementException e) {
             throw e;

@@ -243,7 +243,8 @@ public class FunctionHandle {
         return docType;
     }
 
-    public Set<String> getUseClasses() {
+    public Stream<String> getUseClasses() {
+        Map<String, VariableContext> variableContextMap = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
         return Stream.of(
                 Stream.of(element.getReturnType())
                         .filter(typeMirror -> !typeMirror.getKind().isPrimitive())
@@ -252,13 +253,11 @@ public class FunctionHandle {
                         .map(VariableElement::asType)
                         .filter(typeMirror -> !typeMirror.getKind().isPrimitive())
                         .map(TypeMirror::toString),
-                statementHandles.stream()
-                        .map(StatementHandle::getType)
-                        .filter(typeMirror -> !typeMirror.getKind().isPrimitive())
-                        .map(TypeMirror::toString),
-                numberType == NumberType.BIG_DECIMAL ? Stream.of(ClassName.BIG_DECIMAL) : Stream.<String>empty(),
-                numberType == NumberType.BIG_INTEGER ? Stream.of(ClassName.BIG_INTEGER) : Stream.<String>empty()
-        ).flatMap(Function.identity()).collect(Collectors.toSet());
+                parse
+                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContextMap, numberType)).stream()
+                        : Stream.<String>empty(),
+                statementHandles.stream().flatMap(StatementHandle::getUseClasses)
+        ).flatMap(Function.identity());
     }
 
     public FunctionWriterContext writerContext(Map<String, String> importMap) {
@@ -312,7 +311,8 @@ public class FunctionHandle {
             case CAST -> "(" + simpleType + ")" + expContext + ";";
             case NEW -> "new " + simpleType + "(" + expContext + ");";
             case METHOD -> expContext.append(".").append(cast.name()).append("();").toString();
-            case STATIC_METHOD -> cast.name() + "(" + expContext + ");";
+            case STATIC_METHOD -> importMap.getOrDefault(cast.className(), cast.className()) + "." + cast.name() +
+                    "(" + expContext + ");";
         };
     }
 

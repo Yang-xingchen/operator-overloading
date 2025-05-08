@@ -17,17 +17,14 @@ public class ProcessorDebug {
     public static void main(String[] args) throws Exception {
         // 代码
         String baseCode = """
-                import org.yangxc.core.annotation.OperatorFunction;
-                import org.yangxc.core.annotation.OperatorService;
-                import org.yangxc.core.annotation.Statement;
-                import org.yangxc.core.annotation.NumberType;
+                import org.yangxc.operatoroverloading.core.annotation.*;
                 import java.math.BigDecimal;
                 
                 @OperatorService(imports={BigDecimal.class})
                 public interface BaseService {
                 
-                    @OperatorFunction(value="a==0?a:b", pares=false)
-                    int castAdd1(int a, int b);
+                    @OperatorFunction(value = "123_456_789_123_456_789 % 1_000_000_000", numberType = NumberType.BIG_INTEGER)
+                    long big();
                 
                 }
                 """;

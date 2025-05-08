@@ -69,6 +69,7 @@ public class Complex {
         return Objects.hash(real, imaginary);
     }
 
+    @Cast
     @Override
     public String toString() {
         if (real == 0) {

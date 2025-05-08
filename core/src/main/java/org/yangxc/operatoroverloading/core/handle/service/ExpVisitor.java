@@ -141,8 +141,10 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
                     .append("(").append(subExpContext.toString()).append(")");
             case METHOD -> expContext.append(subExpContext.toString())
                     .append(".").append(cast.name()).append("()");
-            case STATIC_METHOD -> expContext.append(cast.name())
-                    .append("(").append(subExpContext.toString()).append(")");
+            case STATIC_METHOD -> {
+                expContext.append(expContext.importMap.getOrDefault(cast.className(), cast.className())).append(".").append(cast.name())
+                        .append("(").append(subExpContext.toString()).append(")");
+            }
             default -> throw new UnsupportedOperationException("unknown cast type: " + cast.type());
         }
         return expContext.createResult(ast.getSourceType());
@@ -166,7 +168,8 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
                 yield expContext.createResult(overloading.resultType());
             }
             case STATIC_METHOD -> {
-                expContext.append(overloading.name()).append("(").append(subExpContext.toString()).append(", ");
+                expContext.append(expContext.importMap.getOrDefault(overloading.className(), overloading.className())).append(".").append(overloading.name());
+                expContext.append("(").append(subExpContext.toString()).append(", ");
                 ast.getRight().accept(this, expContext);
                 expContext.append(")");
                 yield expContext.createResult(overloading.resultType());
