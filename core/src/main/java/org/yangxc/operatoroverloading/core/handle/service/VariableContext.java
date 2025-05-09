@@ -1,28 +1,66 @@
 package org.yangxc.operatoroverloading.core.handle.service;
 
+import org.yangxc.operatoroverloading.core.constant.VariableDefineType;
+
 import java.util.Objects;
 
 public final class VariableContext {
 
+    private final VariableDefineType defineType;
     private final String name;
     private final String type;
+    private final String defineTypeName;
     private final int statement;
 
-    public VariableContext(String name, String type, int statement) {
+    private VariableContext(VariableDefineType defineType, String type, String name, String defineTypeName, int statement) {
+        this.defineType = defineType;
         this.name = name;
         this.type = type;
+        this.defineTypeName = defineTypeName;
         this.statement = statement;
     }
 
-    public String name() {
+    public static VariableContext createByParam(String type, String name) {
+        return new VariableContext(VariableDefineType.PARAM, type, name, null, -1);
+    }
+
+    public static VariableContext createByLocal(String type, String name, int statement) {
+        return new VariableContext(VariableDefineType.LOCAL, type, name, null, statement);
+    }
+
+    public static VariableContext createByThis(String type, String name) {
+        return new VariableContext(VariableDefineType.THIS, type, name, null, -1);
+    }
+
+    public static VariableContext createByStatic(String type, String defineTypeName, String name) {
+        return new VariableContext(VariableDefineType.STATIC, type, name, defineTypeName, -1);
+    }
+
+    public VariableDefineType getDefineType() {
+        return defineType;
+    }
+
+    public String getName() {
         return name;
     }
 
-    public String type() {
+    public String getQualifiedName() {
+        return switch (defineType) {
+            case PARAM, LOCAL -> name;
+            case THIS -> "this." + name;
+            case STATIC -> defineTypeName + "." + name;
+        };
+    }
+
+    public String getType() {
         return type;
     }
 
-    public int statement() {
+    public String getDefineTypeName() {
+        return defineTypeName;
+    }
+
+    public int getStatement() {
         return statement;
     }
 
@@ -43,10 +81,7 @@ public final class VariableContext {
 
     @Override
     public String toString() {
-        return "VariableContext[" +
-                "name=" + name + ", " +
-                "type=" + type + ", " +
-                "statement=" + statement + ']';
+        return "(" + type + ")" + name;
     }
 
 }

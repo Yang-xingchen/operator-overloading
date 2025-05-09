@@ -12,12 +12,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StatementHandle {
@@ -37,7 +34,7 @@ public class StatementHandle {
 
     private Ast ast;
     private OverloadingContext overloadingContext;
-    private List<VariableContext> variableContexts;
+    private VariableSetContext variableContexts;
 
     public StatementHandle(AnnotationMirror annotationMirror, int index) {
         this.index = index;
@@ -104,12 +101,12 @@ public class StatementHandle {
         return exp;
     }
 
-    public VariableContext setup(AstParse astParse, OverloadingContext overloadingContext, List<VariableContext> variableContexts, List<String> imports, NumberType numberType) {
+    public VariableContext setup(AstParse astParse, OverloadingContext overloadingContext, VariableSetContext variableContexts, List<String> imports, NumberType numberType) {
         this.numberType = this.numberType != NumberType.INHERIT ? this.numberType : numberType;
         this.overloadingContext = overloadingContext;
-        this.variableContexts = new ArrayList<>(variableContexts);
+        this.variableContexts = variableContexts;
         setupAst(astParse, imports);
-        return type.getKind() != TypeKind.VOID ? new VariableContext(varName, type.toString(), index) : null;
+        return type.getKind() != TypeKind.VOID ? VariableContext.createByLocal(type.toString(), varName, index) : null;
     }
 
     private void setupAst(AstParse astParse, List<String> imports) {
@@ -126,11 +123,10 @@ public class StatementHandle {
     }
 
     public Stream<String> getUseClasses() {
-        Map<String, VariableContext> variableContextMap = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
         return Stream.of(
-                Stream.of(type).filter(typeMirror -> !typeMirror.getKind().isPrimitive()).map(TypeMirror::toString),
+                Stream.of(type).map(TypeMirror::toString),
                 parse
-                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContextMap, numberType)).stream()
+                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContexts, numberType)).stream()
                         : Stream.<String>empty()
         ).flatMap(Function.identity());
     }
@@ -166,8 +162,7 @@ public class StatementHandle {
         ExpVisitor.ExpContext expContext;
         ExpVisitor.ExpResult result;
         try {
-            Map<String, VariableContext> variableContextMap = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
-            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContextMap, importMap, numberType);
+            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContexts, importMap, numberType);
             result = ast.accept(ExpVisitor.INSTANCE, expContext);
         } catch (ElementException e) {
             throw e;

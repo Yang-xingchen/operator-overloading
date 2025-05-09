@@ -23,11 +23,11 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
         private final StringBuilder stringBuilder;
         private final OverloadingContext overloadingContext;
-        private final Map<String, VariableContext> variableContexts;
+        private final VariableSetContext variableContexts;
         private final Map<String, String> importMap;
         private final NumberType numberType;
 
-        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, Map<String, VariableContext> variableContexts, Map<String, String> importMap, NumberType numberType) {
+        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, VariableSetContext variableContexts, Map<String, String> importMap, NumberType numberType) {
             this.stringBuilder = stringBuilder;
             this.overloadingContext = overloadingContext;
             this.variableContexts = variableContexts;
@@ -35,7 +35,7 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             this.numberType = numberType;
         }
 
-        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> variableContexts, Map<String, String> importMap, NumberType numberType) {
+        public ExpContext(OverloadingContext overloadingContext, VariableSetContext variableContexts, Map<String, String> importMap, NumberType numberType) {
             this(new StringBuilder(), overloadingContext, variableContexts, importMap, numberType);
         }
 
@@ -80,8 +80,14 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
 
     @Override
     public ExpResult visit(VariableAst ast, ExpContext expContext) {
-        expContext.append(ast.toString());
-        return expContext.createResult(expContext.variableContexts.get(ast.toString()).type());
+        VariableContext variableContext = expContext.variableContexts.get(ast.qualifiedName());
+        switch (variableContext.getDefineType()) {
+            case PARAM, LOCAL -> expContext.append(variableContext.getName());
+            case THIS -> expContext.append("this.").append(variableContext.getName());
+            case STATIC -> expContext.append(expContext.importMap.getOrDefault(variableContext.getDefineTypeName(), variableContext.getDefineTypeName()))
+                            .append(".").append(variableContext.getName());
+        }
+        return expContext.createResult(variableContext.getType());
     }
 
     @Override

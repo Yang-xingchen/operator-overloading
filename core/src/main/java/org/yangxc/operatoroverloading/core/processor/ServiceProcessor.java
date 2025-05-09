@@ -1,22 +1,19 @@
 package org.yangxc.operatoroverloading.core.processor;
 
+import org.yangxc.operatoroverloading.core.annotation.Cast;
 import org.yangxc.operatoroverloading.core.annotation.Operator;
+import org.yangxc.operatoroverloading.core.annotation.OperatorClassConst;
 import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
-import org.yangxc.operatoroverloading.core.annotation.OperatorService;
-import org.yangxc.operatoroverloading.core.constant.ClassOverloading;
-import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.service.FunctionHandle;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.service.ServiceHandle;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
+import org.yangxc.operatoroverloading.core.handle.service.VariableSetContext;
 import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.tools.JavaFileObject;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -46,7 +43,8 @@ public class ServiceProcessor extends AbstractProcessor {
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         List<ServiceHandle> serviceHandles = getContexts(roundEnv);
         OverloadingContext overloadingContext = getOverloading(roundEnv);
-        setup(serviceHandles, overloadingContext);
+        VariableSetContext variableContexts = getConst(roundEnv);
+        setup(serviceHandles, overloadingContext, variableContexts);
         serviceHandles.forEach(this::write);
         return !serviceHandles.isEmpty();
     }
@@ -87,6 +85,7 @@ public class ServiceProcessor extends AbstractProcessor {
                     typeElement.getEnclosedElements()
                             .stream()
                             .filter(element -> element.getKind() == ElementKind.METHOD || element.getKind() == ElementKind.CONSTRUCTOR)
+                            .filter(element -> element.getAnnotation(Operator.class) != null || element.getAnnotation(Cast.class) != null)
                             .map(ExecutableElement.class::cast)
                             .forEach(executableElement -> context.setup(executableElement, typeElement));
                 }
@@ -100,10 +99,32 @@ public class ServiceProcessor extends AbstractProcessor {
         return context;
     }
 
-    private void setup(List<ServiceHandle> handles, OverloadingContext overloadingContext) {
+    private VariableSetContext getConst(RoundEnvironment roundEnv) {
+        VariableSetContext context = new VariableSetContext();
+        for (Element rootElement : roundEnv.getRootElements()) {
+            try {
+                if (rootElement instanceof TypeElement typeElement) {
+                    typeElement.getEnclosedElements()
+                            .stream()
+                            .filter(element -> element.getKind() == ElementKind.FIELD)
+                            .filter(element -> element.getAnnotation(OperatorClassConst.class) != null)
+                            .map(VariableElement.class::cast)
+                            .forEach(variableElement -> context.setup(variableElement, typeElement));
+                }
+            } catch (ElementException e) {
+                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), e.getElement());
+            } catch (Exception e) {
+                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), rootElement);
+            }
+        }
+        logHandle.postAllConst(context);
+        return context;
+    }
+
+    private void setup(List<ServiceHandle> handles, OverloadingContext overloadingContext, VariableSetContext variableContexts) {
         for (ServiceHandle handle : handles) {
             try {
-                handle.setup(overloadingContext, processingEnv.getElementUtils());
+                handle.setup(overloadingContext, processingEnv.getElementUtils(), variableContexts.copy());
                 logHandle.postSetup(handle);
             } catch (ElementException e) {
                 processingEnv.getMessager().printError("setup error: " + e.getMessage(), e.getElement());

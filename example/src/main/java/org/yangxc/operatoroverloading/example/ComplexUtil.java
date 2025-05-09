@@ -1,12 +1,12 @@
 package org.yangxc.operatoroverloading.example;
 
-import org.yangxc.operatoroverloading.core.annotation.Cast;
-import org.yangxc.operatoroverloading.core.annotation.Operator;
-import org.yangxc.operatoroverloading.core.annotation.OperatorClass;
-import org.yangxc.operatoroverloading.core.annotation.OperatorType;
+import org.yangxc.operatoroverloading.core.annotation.*;
 
 @OperatorClass
 public class ComplexUtil {
+
+    @OperatorClassConst
+    public static final Complex2 I = new Complex2(0, 1);
 
     @Cast
     public static Complex to(Complex2 complex) {

@@ -2,18 +2,26 @@ package org.yangxc.operatoroverloading.core.ast.tree;
 
 import org.yangxc.operatoroverloading.core.ast.AstVisitor;
 
+import java.util.List;
 import java.util.Objects;
 
 public class VariableAst implements Ast {
 
-    private final Token var;
+    private final List<Token> var;
+    private final String qualifiedName;
 
     public VariableAst(Token var) {
-        this.var = var;
+        this.var = List.of(var);
+        this.qualifiedName = var.getValue();
     }
 
-    public Token getVar() {
-        return var;
+    public VariableAst(List<Token> var, String qualifiedName) {
+        this.var = var;
+        this.qualifiedName = qualifiedName;
+    }
+
+    public String qualifiedName() {
+        return qualifiedName;
     }
 
     @Override
@@ -23,7 +31,7 @@ public class VariableAst implements Ast {
 
     @Override
     public String toString() {
-        return var.getValue();
+        return qualifiedName;
     }
 
     @Override

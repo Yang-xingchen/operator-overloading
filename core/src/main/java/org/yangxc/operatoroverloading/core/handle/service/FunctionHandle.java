@@ -5,13 +5,15 @@ import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.ast.tree.Ast;
-import org.yangxc.operatoroverloading.core.constant.ClassName;
+import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
-import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.writer.FunctionWriterContext;
 
-import javax.lang.model.element.*;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -38,7 +40,7 @@ public class FunctionHandle {
     private List<String> docLines;
     private Ast ast;
     private OverloadingContext overloadingContext;
-    private List<VariableContext> variableContexts;
+    private VariableSetContext variableContexts;
 
     public FunctionHandle(ExecutableElement element) {
         this.element = element;
@@ -113,9 +115,10 @@ public class FunctionHandle {
         parse = parse != null ? parse : true;
     }
 
-    public void setup(AstParse astParse, OverloadingContext overloadingContext, NumberType numberType, DocType docType, Elements elementUtils, List<String> imports) {
+    public void setup(AstParse astParse, OverloadingContext overloadingContext, VariableSetContext variableContexts, NumberType numberType, DocType docType, Elements elementUtils, List<String> imports) {
         this.numberType = this.numberType != NumberType.INHERIT ? this.numberType : numberType;
         this.overloadingContext = overloadingContext;
+        this.variableContexts = variableContexts;
         setupDoc(docType, elementUtils);
         setupParamVar();
         setupStatement(astParse, overloadingContext, imports);
@@ -183,15 +186,15 @@ public class FunctionHandle {
 
     private void setupParamVar() {
         try {
-            variableContexts = new ArrayList<>(element.getParameters().stream().map(element -> {
+            for (VariableElement element : element.getParameters()) {
                 try {
-                    return new VariableContext(element.getSimpleName().toString(), element.asType().toString(), -1);
+                    variableContexts.add(VariableContext.createByParam(element.asType().toString(), element.getSimpleName().toString()));
                 } catch (ElementException e) {
                     throw e;
                 } catch (Throwable e) {
                     throw new ElementException(e, element);
                 }
-            }).toList());
+            }
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
@@ -202,7 +205,7 @@ public class FunctionHandle {
     private void setupStatement(AstParse astParse, OverloadingContext overloadingContext, List<String> imports) {
         try {
             for (StatementHandle statementHandle : statementHandles) {
-                VariableContext variableContext = statementHandle.setup(astParse, overloadingContext, variableContexts, imports, this.numberType);
+                VariableContext variableContext = statementHandle.setup(astParse, overloadingContext, variableContexts.copy(), imports, this.numberType);
                 if (variableContext != null) {
                     variableContexts.add(variableContext);
                 }
@@ -244,17 +247,14 @@ public class FunctionHandle {
     }
 
     public Stream<String> getUseClasses() {
-        Map<String, VariableContext> variableContextMap = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
         return Stream.of(
                 Stream.of(element.getReturnType())
-                        .filter(typeMirror -> !typeMirror.getKind().isPrimitive())
                         .map(TypeMirror::toString),
                 element.getParameters().stream()
                         .map(VariableElement::asType)
-                        .filter(typeMirror -> !typeMirror.getKind().isPrimitive())
                         .map(TypeMirror::toString),
                 parse
-                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContextMap, numberType)).stream()
+                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContexts, numberType)).stream()
                         : Stream.<String>empty(),
                 statementHandles.stream().flatMap(StatementHandle::getUseClasses)
         ).flatMap(Function.identity());
@@ -298,8 +298,7 @@ public class FunctionHandle {
         if (!parse) {
             return value + ";";
         }
-        Map<String, VariableContext> variableContextMap = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
-        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, variableContextMap, importMap, numberType);
+        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, variableContexts, importMap, numberType);
         ExpVisitor.ExpResult result = ast.accept(ExpVisitor.INSTANCE, expContext);
         String type = resType.toString();
         if (Objects.equals(result.getType(), type)) {

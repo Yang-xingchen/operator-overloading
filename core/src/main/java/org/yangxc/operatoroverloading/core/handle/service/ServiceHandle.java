@@ -36,6 +36,7 @@ public class ServiceHandle {
     private DocType docType;
     private ExecutableElement docElement;
     private List<String> docLines;
+    private VariableSetContext variableContexts;
 
     public static final String TAB = "    ";
 
@@ -103,9 +104,10 @@ public class ServiceHandle {
         this.functionHandles = functionHandles;
     }
 
-    public void setup(OverloadingContext overloadingContext, Elements elementUtils) {
+    public void setup(OverloadingContext overloadingContext, Elements elementUtils, VariableSetContext variableContexts) {
         setupDoc(elementUtils);
-        setupFunction(overloadingContext, elementUtils);
+        setupField(variableContexts);
+        setupFunction(overloadingContext, elementUtils, variableContexts);
     }
 
     private void setupDoc(Elements elementUtils) {
@@ -121,10 +123,21 @@ public class ServiceHandle {
         }
     }
 
-    private void setupFunction(OverloadingContext overloadingContext, Elements elementUtils) {
+    private void setupField(VariableSetContext variableContexts) {
+        try {
+            // TODO
+            this.variableContexts = variableContexts;
+        } catch (ElementException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new ElementException(e, typeElement);
+        }
+    }
+
+    private void setupFunction(OverloadingContext overloadingContext, Elements elementUtils, VariableSetContext variableContexts) {
         try {
             for (FunctionHandle functionHandle : functionHandles) {
-                functionHandle.setup(astParse, overloadingContext, numberType, docType, elementUtils, imports);
+                functionHandle.setup(astParse, overloadingContext, variableContexts.copy(), numberType, docType, elementUtils, imports);
             }
         } catch (ElementException e) {
             throw e;

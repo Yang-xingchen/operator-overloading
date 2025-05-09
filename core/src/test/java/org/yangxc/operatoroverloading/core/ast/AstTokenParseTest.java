@@ -2,10 +2,13 @@ package org.yangxc.operatoroverloading.core.ast;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.yangxc.operatoroverloading.core.ast.tree.Ast;
 import org.yangxc.operatoroverloading.core.ast.tree.NumberAst;
 import org.yangxc.operatoroverloading.core.constant.ClassName;
+import org.yangxc.operatoroverloading.core.constant.VariableDefineType;
 import org.yangxc.operatoroverloading.core.handle.service.SymbolContext;
 import org.yangxc.operatoroverloading.core.handle.service.VariableContext;
+import org.yangxc.operatoroverloading.core.handle.service.VariableSetContext;
 
 import java.util.Arrays;
 import java.util.List;
@@ -96,8 +99,12 @@ class AstTokenParseTest {
         Assertions.assertEquals("(((-1.23e2)+0.45)+0.67e-4)", astParse.parse("-1.23E2+.45+.67e-4").toString(), "-1.23E2+.45+.67e-4");
     }
 
-    private List<VariableContext> getVarContext(String... vars) {
-        return Arrays.stream(vars).map(var -> new VariableContext(var, ClassName.BIG_DECIMAL, -1)).toList();
+    private VariableSetContext getVarContext(String... vars) {
+        VariableSetContext context = new VariableSetContext();
+        for (String var : vars) {
+            context.add(VariableContext.createByParam(ClassName.BIG_DECIMAL, var));
+        }
+        return context;
     }
 
     @Test

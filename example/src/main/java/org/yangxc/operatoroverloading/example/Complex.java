@@ -1,9 +1,6 @@
 package org.yangxc.operatoroverloading.example;
 
-import org.yangxc.operatoroverloading.core.annotation.Cast;
-import org.yangxc.operatoroverloading.core.annotation.Operator;
-import org.yangxc.operatoroverloading.core.annotation.OperatorClass;
-import org.yangxc.operatoroverloading.core.annotation.OperatorType;
+import org.yangxc.operatoroverloading.core.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -13,6 +10,13 @@ public class Complex {
 
     private final double real;
     private final double imaginary;
+
+    @OperatorClassConst
+    public static final Complex ZERO = new Complex(0, 0);
+    @OperatorClassConst
+    public static final Complex ONE = new Complex(1, 0);
+    @OperatorClassConst
+    public static final Complex I = new Complex(0, 1);
 
     public Complex(double real, double imaginary) {
         this.real = real;

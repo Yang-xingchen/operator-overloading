@@ -10,16 +10,16 @@ import java.util.stream.Stream;
 
 public class SymbolContext {
 
-    private final Map<String, VariableContext> variableContexts;
+    private final VariableSetContext variableContexts;
 
     private final Map<String, String> imports;
 
     public SymbolContext() {
-        this(List.of(), List.of());
+        this(new VariableSetContext(), List.of());
     }
 
-    public SymbolContext(List<VariableContext> variableContexts, List<String> imports) {
-        this.variableContexts = variableContexts.stream().collect(Collectors.toMap(VariableContext::name, Function.identity()));
+    public SymbolContext(VariableSetContext variableContexts, List<String> imports) {
+        this.variableContexts = variableContexts;
         this.imports = Stream.of(
                     imports.stream(),
                     ClassName.PRIMITIVE_NAME.stream()
@@ -29,23 +29,27 @@ public class SymbolContext {
     }
 
     public void put(VariableContext variableContext) {
-        variableContexts.put(variableContext.name(), variableContext);
+        variableContexts.add(variableContext);
     }
 
     public String getVarType(String varName) {
-        return variableContexts.get(varName).type();
+        return variableContexts.get(varName).getType();
+    }
+
+    public boolean isVar(String type, String name) {
+        return variableContexts.contains(type + "." + name);
     }
 
     public boolean isVar(String name) {
-        return variableContexts.containsKey(name);
+        return variableContexts.contains(name);
     }
 
     public boolean isType(String name) {
         return imports.containsKey(name);
     }
 
-    public String getType(String simpleType) {
-        return imports.get(simpleType);
+    public String getType(String type) {
+        return imports.getOrDefault(type, type);
     }
 
 }

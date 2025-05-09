@@ -23,8 +23,9 @@ public class ProcessorDebug {
                 @OperatorService(imports={BigDecimal.class})
                 public interface BaseService {
                 
-                    @OperatorFunction(value = "123_456_789_123_456_789 % 1_000_000_000", numberType = NumberType.BIG_INTEGER)
-                    long big();
+
+                    @OperatorFunction("a*Complex.I")
+                    Complex rotation90(Complex a);
                 
                 }
                 """;

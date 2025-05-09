@@ -29,6 +29,8 @@ public class Main {
 
     private static void testComplex() throws Exception {
         ComplexService service = Overloading.create(ComplexService.class);
+        System.out.println(service.rotation(new Complex(2, 1)));
+        System.out.println(service.rotation(new Complex2(2, 1)));
         System.out.println(service.add(new Complex(1, 1), new Complex(1, 0), new Complex(0, 1)));
         System.out.println(service.add(new Complex2(1, 1), new Complex2(1, 0), new Complex2(0, 1)));
         System.out.println(service.cast(new Complex(-1, 1)));

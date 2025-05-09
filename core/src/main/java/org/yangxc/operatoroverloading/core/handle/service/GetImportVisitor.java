@@ -4,12 +4,12 @@ import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.ast.AstVisitor;
 import org.yangxc.operatoroverloading.core.ast.tree.*;
 import org.yangxc.operatoroverloading.core.constant.ClassName;
+import org.yangxc.operatoroverloading.core.constant.VariableDefineType;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -23,10 +23,10 @@ public class GetImportVisitor implements AstVisitor<GetImportVisitor.ExpContext,
     public static class ExpContext {
 
         private final OverloadingContext overloadingContext;
-        private final Map<String, VariableContext> variableContexts;
+        private final VariableSetContext variableContexts;
         private final NumberType numberType;
 
-        public ExpContext(OverloadingContext overloadingContext, Map<String, VariableContext> variableContexts, NumberType numberType) {
+        public ExpContext(OverloadingContext overloadingContext, VariableSetContext variableContexts, NumberType numberType) {
             this.overloadingContext = overloadingContext;
             this.variableContexts = variableContexts;
             this.numberType = numberType;
@@ -64,7 +64,11 @@ public class GetImportVisitor implements AstVisitor<GetImportVisitor.ExpContext,
 
     @Override
     public ExpResult visit(VariableAst ast, ExpContext expContext) {
-        return expContext.createResult(expContext.variableContexts.get(ast.toString()).type(), Stream.empty());
+        VariableContext variableContext = expContext.variableContexts.get(ast.toString());
+        if (variableContext.getDefineType() == VariableDefineType.STATIC) {
+            return expContext.createResult(variableContext.getType(), Stream.of(variableContext.getDefineTypeName()));
+        }
+        return expContext.createResult(variableContext.getType(), Stream.empty());
     }
 
     @Override

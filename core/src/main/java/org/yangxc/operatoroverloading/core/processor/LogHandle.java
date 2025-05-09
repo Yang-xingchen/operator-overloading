@@ -4,6 +4,8 @@ import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingCo
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.service.FunctionHandle;
 import org.yangxc.operatoroverloading.core.handle.service.ServiceHandle;
+import org.yangxc.operatoroverloading.core.handle.service.VariableContext;
+import org.yangxc.operatoroverloading.core.handle.service.VariableSetContext;
 import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
 
 import javax.annotation.processing.Messager;
@@ -76,6 +78,14 @@ public class LogHandle {
         }
     }
 
+    public void postAllConst(VariableSetContext context) {
+        if (DEBUG.equals(level)) {
+            messager.printNote("load const: " + context.values());
+        } else {
+            messager.printNote("load const: " + context.values().stream().collect(Collectors.groupingBy(VariableContext::getDefineTypeName, Collectors.counting())));
+        }
+    }
+
     public void postSetup(ServiceHandle handle) {
         if (DEBUG.equals(level)) {
             StringBuilder msg = new StringBuilder("setup service: {")
@@ -112,5 +122,4 @@ public class LogHandle {
             messager.printNote("write complete", handle.getTypeElement());
         }
     }
-
 }

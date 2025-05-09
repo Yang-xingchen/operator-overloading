@@ -4,8 +4,14 @@ import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
 import org.yangxc.operatoroverloading.core.annotation.OperatorService;
 
-@OperatorService(imports = {Complex.class, Complex2.class})
+@OperatorService(imports = {Complex.class, Complex2.class, ComplexUtil.class})
 public interface ComplexService {
+
+    @OperatorFunction("a*Complex.I")
+    Complex rotation(Complex a);
+
+    @OperatorFunction("a*ComplexUtil.I")
+    Complex2 rotation(Complex2 a);
 
     @OperatorFunction("a+b+c")
     Complex add(Complex a, Complex b, Complex c);
