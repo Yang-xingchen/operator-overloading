@@ -16,6 +16,7 @@ public class ServiceWriterContext {
 
     // qualifiedName-simpleName
     private Map<String, String> importMap;
+    private List<Param> fieldList;
     private List<FunctionWriterContext> functionWriterContexts;
 
     public static final String TAB = "    ";
@@ -53,6 +54,10 @@ public class ServiceWriterContext {
         return importMap;
     }
 
+    public void setFieldList(List<Param> fieldList) {
+        this.fieldList = fieldList;
+    }
+
     public void setFunctionWrites(List<FunctionWriterContext> functionWriterContexts) {
         this.functionWriterContexts = functionWriterContexts;
     }
@@ -76,20 +81,30 @@ public class ServiceWriterContext {
                         StringBuilder::append)
                 .toString();
         String generated = "@" + this.importMap.getOrDefault(GENERATED, GENERATED) + "(" +
-                "value=\"org.yangxc.operatoroverloading.core.processor.ServiceProcessor\", " +
+                "value=\"org.yangxc.operatoroverloading.core.processor.MainProcessor\", " +
                 "date=\"" + LocalDateTime.now().withNano(0) + "\", " +
                 "comments=\"created by OperatorOverloading\")";
         String className = "public class " + this.className +" implements " + interfaceName;
-        String methods = functionWriterContexts
-                .stream()
-                .map(functionWriterContext -> functionWriterContext.code(TAB))
-                .collect(Collectors.joining("\n"));
+        StringBuilder fields = new StringBuilder();
+        for (Param field : fieldList) {
+            fields.append(TAB)
+                    .append("private ")
+                    .append(this.importMap.getOrDefault(field.type(), field.type()))
+                    .append(" ")
+                    .append(field.name())
+                    .append(";\n");
+        }
+        StringBuilder methods = new StringBuilder();
+        for (FunctionWriterContext functionWriterContext : functionWriterContexts) {
+            methods.append(functionWriterContext.code(TAB)).append("\n");
+        }
         return (this.pack != null ? ("package " + this.pack + ";\n\n") : "") +
                 imports + "\n" +
                 doc +
                 generated + "\n" +
                 className + " {\n\n" +
-                methods + "\n" +
+                fields +
+                methods +
                 "}";
     }
 

@@ -1,31 +1,35 @@
 package org.yangxc.operatoroverloading.example;
 
 import org.yangxc.operatoroverloading.core.annotation.NumberType;
-import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
+import org.yangxc.operatoroverloading.core.annotation.OperatorClassConst;
+import org.yangxc.operatoroverloading.core.annotation.ServiceFunction;
 import org.yangxc.operatoroverloading.core.annotation.OperatorService;
 
-@OperatorService(imports = {Complex.class, Complex2.class, ComplexUtil.class})
+@OperatorService(imports = {Complex.class, Complex2.class, ComplexUtil.class, ComplexService.class})
 public interface ComplexService {
 
-    @OperatorFunction("a*Complex.I")
+    @OperatorClassConst
+    Complex2 ONE = new Complex2(1, 0);
+
+    @ServiceFunction("a*Complex.I")
     Complex rotation(Complex a);
 
-    @OperatorFunction("a*ComplexUtil.I")
+    @ServiceFunction("a*ComplexService.ONE")
     Complex2 rotation(Complex2 a);
 
-    @OperatorFunction("a+b+c")
+    @ServiceFunction("a+b+c")
     Complex add(Complex a, Complex b, Complex c);
 
-    @OperatorFunction("a+b+c")
+    @ServiceFunction("a+b+c")
     Complex2 add(Complex2 a, Complex2 b, Complex2 c);
 
-    @OperatorFunction(value = "a+(Complex)1", numberType = NumberType.BIG_DECIMAL)
+    @ServiceFunction(value = "a+(Complex)1", numberType = NumberType.BIG_DECIMAL)
     Complex cast(Complex a);
 
-    @OperatorFunction("a+(Complex)b")
+    @ServiceFunction("a+(Complex)b")
     Complex cast1(Complex a, Complex2 b);
 
-    @OperatorFunction("(Complex2)a+b")
+    @ServiceFunction("(Complex2)a+b")
     Complex2 cast2(Complex a, Complex2 b);
 
 }

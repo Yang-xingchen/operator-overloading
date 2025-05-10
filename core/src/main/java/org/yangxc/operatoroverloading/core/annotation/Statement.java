@@ -3,6 +3,12 @@ package org.yangxc.operatoroverloading.core.annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+/**
+ * <pre>
+ * 定义本地变量
+ * </pre>
+ * @see ServiceFunction
+ */
 @Retention(RetentionPolicy.SOURCE)
 public @interface Statement {
 
@@ -11,7 +17,7 @@ public @interface Statement {
     String varName();
 
     /**
-     * 表达式，支持同{@link OperatorFunction#value()}
+     * 表达式，支持同{@link ServiceFunction#value()}
      */
     String exp();
 

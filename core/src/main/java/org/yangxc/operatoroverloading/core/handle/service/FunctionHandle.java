@@ -2,13 +2,14 @@ package org.yangxc.operatoroverloading.core.handle.service;
 
 import org.yangxc.operatoroverloading.core.annotation.DocType;
 import org.yangxc.operatoroverloading.core.annotation.NumberType;
-import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
+import org.yangxc.operatoroverloading.core.annotation.ServiceFunction;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.ast.tree.Ast;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.writer.FunctionWriterContext;
+import org.yangxc.operatoroverloading.core.handle.writer.Param;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -19,7 +20,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FunctionHandle {
@@ -46,9 +46,9 @@ public class FunctionHandle {
         this.element = element;
         element.getAnnotationMirrors()
                 .stream()
-                .filter(annotationMirror -> OperatorFunction.class.getTypeName().equals(annotationMirror.getAnnotationType().toString()))
+                .filter(annotationMirror -> ServiceFunction.class.getTypeName().equals(annotationMirror.getAnnotationType().toString()))
                 .findAny()
-                .orElseThrow(() -> new ElementException("@OperatorFunction not found", element))
+                .orElseThrow(() -> new ElementException("@ServiceFunction not found", element))
                 .getElementValues()
                 .forEach((executableElement, annotationValue) -> {
                     String name = executableElement.getSimpleName().toString();
@@ -107,7 +107,7 @@ public class FunctionHandle {
                     }
                 });
         if (value == null || value.isBlank()) {
-            throw new ElementException("OperatorFunction#value is blank", element);
+            throw new ElementException("ServiceFunction#value is blank", element);
         }
         numberType = numberType != null ? numberType : NumberType.INHERIT;
         docType = docType != null ? docType : DocType.INHERIT;
@@ -267,10 +267,10 @@ public class FunctionHandle {
             String returnType = element.getReturnType().toString();
             write.setReturnType(importMap.getOrDefault(returnType, returnType));
             write.setName(element.getSimpleName().toString());
-            List<FunctionWriterContext.Param> params = element.getParameters().stream().map(variableElement -> {
+            List<Param> params = element.getParameters().stream().map(variableElement -> {
                 try {
                     String type = variableElement.asType().toString();
-                    return new FunctionWriterContext.Param(importMap.getOrDefault(type, type), variableElement.getSimpleName().toString());
+                    return new Param(importMap.getOrDefault(type, type), variableElement.getSimpleName().toString());
                 } catch (ElementException e) {
                     throw e;
                 } catch (Throwable e) {

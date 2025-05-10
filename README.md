@@ -12,7 +12,7 @@
 
 1. 配置spi(后续考虑移除该步骤)，参考见[此处](example/src/main/resources/META-INF/services/javax.annotation.processing.Processor): 
    1. 添加`META-INF/services/javax.annotation.processing.Processor`文件，若已存在则忽略该步骤
-   2. 在该文件内添加`org.yangxc.operatoroverloading.core.processor.ServiceProcessor`(作为单独一行)
+   2. 在该文件内添加`org.yangxc.operatoroverloading.core.processor.MainProcessor`(作为单独一行)
 2. 定义服务接口:
     ```
    @OperatorService
@@ -20,7 +20,7 @@
    ```
    1. 该类型必须为接口
    2. 必须添加`annotation.org.yangxc.operatoroverloading.core.OperatorService`注解，具体参数见注释[OperatorService.java](core/src/main/java/org/yangxc/core/annotation/OperatorService.java)
-   3. 定义方法, 添加`annotation.org.yangxc.operatoroverloading.core.OperatorFunction`注解，具体参数见注释[OperatorFunction.java](core/src/main/java/org/yangxc/core/annotation/OperatorFunction.java)
+   3. 定义方法, 添加`annotation.org.yangxc.operatoroverloading.core.ServiceFunction`注解，具体参数见注释[ServiceFunction.java](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/ServiceFunction.java)
    4. _无需实现类_
 3. 获取实现: `org.yangxc.operatoroverloading.core.Overloading.get(BaseService.class)`
 
@@ -32,7 +32,7 @@
 @OperatorService(imports = BigDecimal.class)                                                                        // 1
 public interface BaseService {                                                                                      // 2
 
-    @OperatorFunction(                                                                                              // 3
+    @ServiceFunction(                                                                                              // 3
             statements = {                                                                                          // 4
                     @Statement(type = BigDecimal.class, varName = "a", exp = "-12.34e2-.56-(.78e-2+(BigDecimal)b)") // 5
             },
@@ -66,12 +66,19 @@ double res = service.test(1);                                                   
 - 在`8`处获取该类实现对象，在`9`处调用定义的方法
 
 > [!TIP]
-> `statements`表示定义本地变量，可定义多个变量。入参、变量、返回的依赖关系需自行处理，程序会按照定义顺序添加代码。
+> 表达式中可使用的变量如下:
+> 1. 由[OperatorClassConst](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/OperatorClassConst.java)定义的静态变量
+>   - 内置可用常量见[ConstantContext](core/src/main/java/org/yangxc/operatoroverloading/core/constant/ConstantContext.java)
+> 2. 由[ServiceField](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/ServiceField.java)定义的实例字段
+> 3. 方法入参
+> 4. 由[Statement](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/Statement.java)定义的本地变量
+> 
+> 上述变量及返回值间的依赖关系需自行处理
 
 > [!TIP]
-> 表达式可定义在`@OperatorFunction`的`value`(表示该方法的返回值)及`@Statement`的`exp`(表示该变量的运算表达式)
+> 表达式可定义在`@ServiceFunction`的`value`(表示该方法的返回值)及`@Statement`的`exp`(表示该变量的运算表达式)
 > - 表达式忽略空格、制表符、换行符
-> - 可使用方法入参或者定义的变量，变量类型不支持泛型，需符合操作(即方法入参要求的类型和变量类型需一致，若不一致需要转化，程序**不会**自动进行转化)
+> - 可使用上述tip定义的变量，变量类型不支持泛型，需符合操作(即方法入参要求的类型和变量类型需一致，若不一致需要转化，程序**不会**自动进行转化)
 > - 可使用数字，会自动转换为`numberType`定义的类型，`BigDecimal`及`BigInteger`将使用表达式内的字符串进行转化
 > - 数字定义同Java语法(十进制)，支持`1`(整数), `1_000`(下划线分割), `1.23`(小数), `.23`(忽略整数的小数), `-.23`(负数，需在表达式开头), `+.23`(正数，需在表达式开头), `1e2`(科学计数法，`e`大小写皆可), `1L`(`L`结尾，`L`大小写皆可，注意程序将忽略`L`, 如需定义`long`，需手动进行转化)
 > - 支持`+`, `-`, `*`, `/`, `%`运算及`()`使用子表达式
@@ -179,7 +186,6 @@ public class Complex {                                  // 2
 
 - [ ] 支持将科学计数法转成普通数值
 - [ ] 自动化导入(消除`spi`使用)
-- [ ] 支持定义实例字段
 - [ ] 支持条件分支
 - [ ] 支持`Spring`自动注入(添加其示例)
 - [ ] 文档

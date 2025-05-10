@@ -5,14 +5,23 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * <pre>
+ * 定义处理的方法，通过该类定义生成对应操作方法
+ *
+ * 方法所属的类需增加{@link OperatorService}注解
+ * </pre>
+ *
+ * @see OperatorService
+ */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.METHOD)
-public @interface OperatorFunction {
+public @interface ServiceFunction {
 
     /**
      * <pre>
      * 表达式
-     * 可使用方法入参或者{@link #statements()}定义的变量，变量名称类型需符合操作
+     * 可使用静态字段{@link OperatorClassConst}、实例字段{@link ServiceField}、方法入参、本地字段{@link #statements()}定义的变量，变量名称类型需符合操作
      * 可使用数字，会自动转换为{@link #numberType()}定义的类型
      * 数字定义同Java语法
      * 支持'+','-','*','/','%'运算及'()'使用子表达式

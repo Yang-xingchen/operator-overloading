@@ -13,7 +13,9 @@ public class Main {
 
     private static void testBase() throws Exception {
         BaseService service = Overloading.create(BaseService.class);
+        service.setTwo(new BigDecimal(2));
         System.out.println(service.add());
+        System.out.println(service.add(new BigDecimal(2)));
         System.out.println(service.add(new BigDecimal(1), new BigDecimal(2)));
         System.out.println(service.multiply(new BigDecimal(2)));
         System.out.println(service.var());

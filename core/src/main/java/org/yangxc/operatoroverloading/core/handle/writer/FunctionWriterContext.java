@@ -13,10 +13,6 @@ public class FunctionWriterContext {
 
     private List<String> bodyLines;
 
-    public record Param(String type, String name) {
-
-    }
-
     public void setDocLines(List<String> docLines) {
         this.docLines = docLines;
     }
@@ -50,7 +46,9 @@ public class FunctionWriterContext {
             }
             doc.append(prefix).append(" */\n");
         }
-        String paramString = params.stream().map(param -> param.type + " " + param.name).collect(Collectors.joining(", "));
+        String paramString = params.stream()
+                .map(param -> param.type() + " " + param.name())
+                .collect(Collectors.joining(", "));
         String throwsString = throwList.isEmpty() ? "" : ("throws " + String.join(",", throwList) + " ");
         return doc +
                 prefix + "@Override\n" +

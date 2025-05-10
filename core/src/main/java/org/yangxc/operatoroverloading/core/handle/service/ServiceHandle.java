@@ -14,10 +14,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,13 +29,12 @@ public class ServiceHandle {
     private NumberType numberType;
     private ExecutableElement importsElement;
     private List<String> imports;
+    private List<FieldHandle> fieldHandles;
     private List<FunctionHandle> functionHandles;
     private DocType docType;
     private ExecutableElement docElement;
     private List<String> docLines;
     private VariableSetContext variableContexts;
-
-    public static final String TAB = "    ";
 
     public ServiceHandle(TypeElement typeElement) {
         this(AstParse.DEFAULT, typeElement);
@@ -100,14 +96,18 @@ public class ServiceHandle {
         imports = imports != null ? imports : List.of();
     }
 
+    public void setServiceFieldHandles(List<FieldHandle> fieldHandles) {
+        this.fieldHandles = fieldHandles;
+    }
+
     public void setFunctionContexts(List<FunctionHandle> functionHandles) {
         this.functionHandles = functionHandles;
     }
 
     public void setup(OverloadingContext overloadingContext, Elements elementUtils, VariableSetContext variableContexts) {
         setupDoc(elementUtils);
-        setupField(variableContexts);
-        setupFunction(overloadingContext, elementUtils, variableContexts);
+        setupField(variableContexts, elementUtils);
+        setupFunction(overloadingContext, elementUtils);
     }
 
     private void setupDoc(Elements elementUtils) {
@@ -123,9 +123,9 @@ public class ServiceHandle {
         }
     }
 
-    private void setupField(VariableSetContext variableContexts) {
+    private void setupField(VariableSetContext variableContexts, Elements elementUtils) {
         try {
-            // TODO
+            fieldHandles.forEach(fieldHandle -> fieldHandle.setup(variableContexts, elementUtils));
             this.variableContexts = variableContexts;
         } catch (ElementException e) {
             throw e;
@@ -134,7 +134,7 @@ public class ServiceHandle {
         }
     }
 
-    private void setupFunction(OverloadingContext overloadingContext, Elements elementUtils, VariableSetContext variableContexts) {
+    private void setupFunction(OverloadingContext overloadingContext, Elements elementUtils) {
         try {
             for (FunctionHandle functionHandle : functionHandles) {
                 functionHandle.setup(astParse, overloadingContext, variableContexts.copy(), numberType, docType, elementUtils, imports);
@@ -195,7 +195,11 @@ public class ServiceHandle {
                     this.imports.stream()
             ).collect(Collectors.toSet());
             Map<String, String> importMap = context.handelImport(imports);
-            context.setFunctionWrites(functionHandles.stream().map(functionHandle -> functionHandle.writerContext(importMap)).toList());
+            context.setFieldList(fieldHandles.stream().flatMap(FieldHandle::writeParams).toList());
+            context.setFunctionWrites(Stream.concat(
+                    fieldHandles.stream().map(fieldHandle -> fieldHandle.writeFunction(importMap)).filter(Objects::nonNull),
+                    functionHandles.stream().map(functionHandle -> functionHandle.writerContext(importMap))
+            ).toList());
             return context;
         } catch (ElementException e) {
             throw e;

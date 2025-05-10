@@ -1,5 +1,7 @@
 package org.yangxc.operatoroverloading.core.handle.service;
 
+import org.yangxc.operatoroverloading.core.constant.ConstantContext;
+import org.yangxc.operatoroverloading.core.constant.VariableDefineType;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 
 import javax.lang.model.element.Modifier;
@@ -12,7 +14,7 @@ public class VariableSetContext {
     private final Map<String, VariableContext> varHap;
 
     public VariableSetContext() {
-        this(new HashMap<>());
+        this(new HashMap<>(ConstantContext.DEFAULT_CONSTANT));
     }
 
     private VariableSetContext(Map<String, VariableContext> varHap) {

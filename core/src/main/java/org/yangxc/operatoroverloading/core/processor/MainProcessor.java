@@ -1,11 +1,9 @@
 package org.yangxc.operatoroverloading.core.processor;
 
-import org.yangxc.operatoroverloading.core.annotation.Cast;
-import org.yangxc.operatoroverloading.core.annotation.Operator;
-import org.yangxc.operatoroverloading.core.annotation.OperatorClassConst;
-import org.yangxc.operatoroverloading.core.annotation.OperatorFunction;
+import org.yangxc.operatoroverloading.core.annotation.*;
 import org.yangxc.operatoroverloading.core.handle.service.FunctionHandle;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
+import org.yangxc.operatoroverloading.core.handle.service.FieldHandle;
 import org.yangxc.operatoroverloading.core.handle.service.ServiceHandle;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.service.VariableSetContext;
@@ -21,10 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@SupportedAnnotationTypes({ServiceProcessor.SERVICE_ANNOTATION, ServiceProcessor.OPERATOR_ANNOTATION})
+@SupportedAnnotationTypes({MainProcessor.SERVICE_ANNOTATION, MainProcessor.OPERATOR_ANNOTATION})
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
-@SupportedOptions({ServiceProcessor.OPERATOR_OVERLOADING_LOG})
-public class ServiceProcessor extends AbstractProcessor {
+@SupportedOptions({MainProcessor.OPERATOR_OVERLOADING_LOG})
+public class MainProcessor extends AbstractProcessor {
 
     private LogHandle logHandle;
 
@@ -41,7 +39,7 @@ public class ServiceProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        List<ServiceHandle> serviceHandles = getContexts(roundEnv);
+        List<ServiceHandle> serviceHandles = getService(roundEnv);
         OverloadingContext overloadingContext = getOverloading(roundEnv);
         VariableSetContext variableContexts = getConst(roundEnv);
         setup(serviceHandles, overloadingContext, variableContexts);
@@ -49,20 +47,36 @@ public class ServiceProcessor extends AbstractProcessor {
         return !serviceHandles.isEmpty();
     }
 
-    private List<ServiceHandle> getContexts(RoundEnvironment roundEnv) {
+    private List<ServiceHandle> getService(RoundEnvironment roundEnv) {
         List<ServiceHandle> handles = new ArrayList<>();
         for (Element rootElement : roundEnv.getRootElements()) {
             try {
                 if (rootElement.getKind() != ElementKind.INTERFACE) {
                     continue;
                 }
+                if (rootElement.getAnnotation(OperatorService.class) == null) {
+                    continue;
+                }
                 ServiceHandle handle = new ServiceHandle((TypeElement) rootElement);
+                // ServiceField
+                List<FieldHandle> fieldHandles = rootElement.getEnclosedElements()
+                        .stream()
+                        .filter(element -> element.getKind() == ElementKind.METHOD)
+                        .map(ExecutableElement.class::cast)
+                        .filter(executableElement -> !executableElement.isDefault())
+                        .filter(executableElement -> executableElement.getAnnotation(ServiceField.class) != null)
+                        .filter(executableElement -> executableElement.getAnnotation(ServiceFunction.class) == null)
+                        .map(element -> new FieldHandle(element, rootElement))
+                        .toList();
+                handle.setServiceFieldHandles(fieldHandles);
+                // ServiceFunction
                 List<FunctionHandle> functionHandles = rootElement.getEnclosedElements()
                         .stream()
                         .filter(element -> element.getKind() == ElementKind.METHOD)
                         .map(ExecutableElement.class::cast)
                         .filter(executableElement -> !executableElement.isDefault())
-                        .filter(executableElement -> executableElement.getAnnotation(OperatorFunction.class) != null)
+                        .filter(executableElement -> executableElement.getAnnotation(ServiceField.class) == null)
+                        .filter(executableElement -> executableElement.getAnnotation(ServiceFunction.class) != null)
                         .map(FunctionHandle::new)
                         .toList();
                 handle.setFunctionContexts(functionHandles);
@@ -81,6 +95,9 @@ public class ServiceProcessor extends AbstractProcessor {
         OverloadingContext context = new OverloadingContext();
         for (Element rootElement : roundEnv.getRootElements()) {
             try {
+                if (rootElement.getAnnotation(OperatorClass.class) == null) {
+                    continue;
+                }
                 if (rootElement instanceof TypeElement typeElement) {
                     typeElement.getEnclosedElements()
                             .stream()
@@ -103,6 +120,9 @@ public class ServiceProcessor extends AbstractProcessor {
         VariableSetContext context = new VariableSetContext();
         for (Element rootElement : roundEnv.getRootElements()) {
             try {
+                if (rootElement.getAnnotation(OperatorClass.class) == null && rootElement.getAnnotation(OperatorService.class) == null) {
+                    continue;
+                }
                 if (rootElement instanceof TypeElement typeElement) {
                     typeElement.getEnclosedElements()
                             .stream()

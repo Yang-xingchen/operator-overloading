@@ -1,6 +1,6 @@
 package org.yangxc.operatoroverloading.core;
 
-import org.yangxc.operatoroverloading.core.processor.ServiceProcessor;
+import org.yangxc.operatoroverloading.core.processor.MainProcessor;
 
 import javax.annotation.processing.Processor;
 import javax.tools.*;
@@ -24,13 +24,13 @@ public class ProcessorDebug {
                 public interface BaseService {
                 
 
-                    @OperatorFunction("a*Complex.I")
+                    @ServiceFunction("a*Complex.I")
                     Complex rotation90(Complex a);
                 
                 }
                 """;
         // 执行
-        compile(baseCode, new ServiceProcessor());
+        compile(baseCode, new MainProcessor());
 
         // 清除编译结果
         Files.delete(Paths.get("BaseService.class"));

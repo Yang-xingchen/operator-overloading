@@ -5,6 +5,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * <pre>
+ * 定义处理的接口，通过该类定义生成对应操作代码
+ * 该类必须为接口，且所有方法添加{@link ServiceFunction}或{@link ServiceField}注解
+ * </pre>
+ *
+ * @see ServiceFunction
+ * @see ServiceField
+ */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)
 public @interface OperatorService {
@@ -22,7 +31,10 @@ public @interface OperatorService {
     /**
      * 导入
      * 可在表达式中使用简单名称进行强转
-     * 使用静态方法编译后可使用简单名称调用
+     * 可在表达式中使用简单名称+变量名称获取静态变量
+     *
+     * @see Cast 强转
+     * @see OperatorClassConst 静态变量
      */
     Class<?>[] imports() default {};
 

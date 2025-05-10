@@ -1,6 +1,5 @@
 package org.yangxc.operatoroverloading.core.processor;
 
-import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.service.FunctionHandle;
 import org.yangxc.operatoroverloading.core.handle.service.ServiceHandle;
@@ -39,7 +38,7 @@ public class LogHandle {
             return;
         }
         messager.printNote("------------------------[ OperatorOverloading ]------------------------");
-        messager.printNote("bug反馈: https://github.com/Yang-xingchen/operator-overloading");
+        messager.printNote("issues反馈: https://github.com/Yang-xingchen/operator-overloading/issues");
         messager.printNote("使用 -AOperatorOverloadingLog=none 仅显示错误信息");
         messager.printNote("使用 -AOperatorOverloadingLog=info 显示基本信息");
         messager.printNote("使用 -AOperatorOverloadingLog=debug 显示详细信息");
@@ -49,17 +48,6 @@ public class LogHandle {
     public void postAllInit(List<ServiceHandle> handles) {
         if (DEBUG.equals(level) || INFO.equals(level)) {
             messager.printNote("load services: " + handles.stream().map(ServiceHandle::getTypeElement).map(TypeElement::getQualifiedName).map(Object::toString).toList());
-        }
-    }
-
-    public void postOverloading(TypeElement typeElement, ClassOverloadingContext context) {
-        if (DEBUG.equals(level)) {
-            StringBuilder msg = new StringBuilder("find overloading type: {")
-                    .append("\"qualifiedName\": \"").append(context.getTypeName()).append("\", ")
-                    .append("\"supportOperator\": [").append(context.supportOperator().stream().map(op -> "\"" + op.name() + "\"").collect(Collectors.joining(", "))).append("],")
-                    .append("\"supportCast\": [").append(context.supportCast().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", "))).append("]")
-                    .append("}");
-            messager.printNote(msg.toString(), typeElement);
         }
     }
 

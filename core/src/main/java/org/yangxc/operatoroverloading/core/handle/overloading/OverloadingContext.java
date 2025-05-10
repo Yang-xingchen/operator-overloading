@@ -32,61 +32,70 @@ public class OverloadingContext {
             List<? extends VariableElement> parameters = element.getParameters();
             String paramType = parameters != null && !parameters.isEmpty() ? parameters.getFirst().asType().toString() : null;
             String resultType = element.getReturnType().toString();
-            AtomicBoolean addOperator = new AtomicBoolean(false);
-            if (element.getKind() == ElementKind.METHOD) {
-                element.getAnnotationMirrors()
-                        .stream()
-                        .filter(annotationMirror -> Operator.class.getTypeName().equals(annotationMirror.getAnnotationType().toString()))
-                        .findAny()
-                        .ifPresent(annotation -> {
-                            annotation.getElementValues().forEach((executableElement, annotationValue) -> {
-                                try {
-                                    String name = executableElement.getSimpleName().toString();
-                                    if ("value".equals(name)) {
-                                        OperatorType operatorType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                                            @Override
-                                            public OperatorType visitEnumConstant(VariableElement c, Object object) {
-                                                return OperatorType.valueOf(c.getSimpleName().toString());
-                                            }
-                                        }, null);
-                                        if (isStatic) {
-                                            put(new OperatorOverloadingContext(operatorType, OperatorMethodType.STATIC_METHOD, typeName, functionName, paramType, resultType));
-                                        } else {
-                                            put(new OperatorOverloadingContext(operatorType, OperatorMethodType.METHOD, null, functionName, paramType, resultType));
-                                        }
-                                        addOperator.set(true);
-                                    }
-                                } catch (ElementException e) {
-                                    throw e;
-                                } catch (Throwable e) {
-                                    throw new ElementException(e, executableElement);
-                                }
-                            });
-                        });
-            }
-            AtomicBoolean addCast = new AtomicBoolean(false);
-            element.getAnnotationMirrors()
-                    .stream()
-                    .filter(annotationMirror -> Cast.class.getTypeName().equals(annotationMirror.getAnnotationType().toString()))
-                    .findAny()
-                    .ifPresent(annotation -> {
-                        if (element.getKind() == ElementKind.CONSTRUCTOR) {
-                            put(new CastContext(paramType, CastMethodType.NEW, null, "", typeName));
-                        } else if (isStatic) {
-                            put(new CastContext(paramType, CastMethodType.STATIC_METHOD, typeName, functionName, resultType));
-                        } else {
-                            put(new CastContext(typeName, CastMethodType.METHOD, null, functionName, resultType));
-                        }
-                        addCast.set(true);
-                    });
-            if (!addOperator.get()) {
-                addCast.get();
-            }
+
+            setupOperator(element, isStatic, typeName, functionName, paramType, resultType);
+            setupCast(element, paramType, typeName, isStatic, functionName, resultType);
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
             throw new ElementException(e, element);
         }
+    }
+
+    /**
+     * setup {@link Operator}
+     */
+    private void setupOperator(ExecutableElement element, boolean isStatic, String typeName, String functionName, String paramType, String resultType) {
+        if (element.getKind() != ElementKind.METHOD) {
+            return;
+        }
+        element.getAnnotationMirrors()
+                .stream()
+                .filter(annotationMirror -> Operator.class.getTypeName().equals(annotationMirror.getAnnotationType().toString()))
+                .findAny()
+                .ifPresent(annotation -> {
+                    annotation.getElementValues().forEach((executableElement, annotationValue) -> {
+                        try {
+                            String name = executableElement.getSimpleName().toString();
+                            if ("value".equals(name)) {
+                                OperatorType operatorType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                    @Override
+                                    public OperatorType visitEnumConstant(VariableElement c, Object object) {
+                                        return OperatorType.valueOf(c.getSimpleName().toString());
+                                    }
+                                }, null);
+                                if (isStatic) {
+                                    put(new OperatorOverloadingContext(operatorType, OperatorMethodType.STATIC_METHOD, typeName, functionName, paramType, resultType));
+                                } else {
+                                    put(new OperatorOverloadingContext(operatorType, OperatorMethodType.METHOD, null, functionName, paramType, resultType));
+                                }
+                            }
+                        } catch (ElementException e) {
+                            throw e;
+                        } catch (Throwable e) {
+                            throw new ElementException(e, executableElement);
+                        }
+                    });
+                });
+    }
+
+    /**
+     * setup {@link Cast}
+     */
+    private void setupCast(ExecutableElement element, String paramType, String typeName, boolean isStatic, String functionName, String resultType) {
+        element.getAnnotationMirrors()
+                .stream()
+                .filter(annotationMirror -> Cast.class.getTypeName().equals(annotationMirror.getAnnotationType().toString()))
+                .findAny()
+                .ifPresent(annotation -> {
+                    if (element.getKind() == ElementKind.CONSTRUCTOR) {
+                        put(new CastContext(paramType, CastMethodType.NEW, null, "", typeName));
+                    } else if (isStatic) {
+                        put(new CastContext(paramType, CastMethodType.STATIC_METHOD, typeName, functionName, resultType));
+                    } else {
+                        put(new CastContext(typeName, CastMethodType.METHOD, null, functionName, resultType));
+                    }
+                });
     }
 
     public ClassOverloadingContext get(String type) {
