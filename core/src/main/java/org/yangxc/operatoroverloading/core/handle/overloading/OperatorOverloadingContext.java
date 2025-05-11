@@ -23,27 +23,27 @@ public final class OperatorOverloadingContext {
         this.resultType = resultType;
     }
 
-    public OperatorType operator() {
+    public OperatorType getOperator() {
         return operator;
     }
 
-    public OperatorMethodType type() {
+    public OperatorMethodType getType() {
         return type;
     }
 
-    public String className() {
+    public String getClassName() {
         return className;
     }
 
-    public String name() {
+    public String getName() {
         return name;
     }
 
-    public String paramType() {
+    public String getParamType() {
         return paramType;
     }
 
-    public String resultType() {
+    public String getResultType() {
         return resultType;
     }
 

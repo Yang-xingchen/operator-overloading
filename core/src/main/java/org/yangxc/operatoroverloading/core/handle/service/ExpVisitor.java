@@ -8,8 +8,8 @@ import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
+import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
 
-import java.util.Map;
 import java.util.function.Function;
 
 public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.ExpResult> {
@@ -24,23 +24,23 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         private final StringBuilder stringBuilder;
         private final OverloadingContext overloadingContext;
         private final VariableSetContext variableContexts;
-        private final Map<String, String> importMap;
+        private final ImportContext importContext;
         private final NumberType numberType;
 
-        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, VariableSetContext variableContexts, Map<String, String> importMap, NumberType numberType) {
+        public ExpContext(StringBuilder stringBuilder, OverloadingContext overloadingContext, VariableSetContext variableContexts, ImportContext importContext, NumberType numberType) {
             this.stringBuilder = stringBuilder;
             this.overloadingContext = overloadingContext;
             this.variableContexts = variableContexts;
-            this.importMap = importMap;
+            this.importContext = importContext;
             this.numberType = numberType;
         }
 
-        public ExpContext(OverloadingContext overloadingContext, VariableSetContext variableContexts, Map<String, String> importMap, NumberType numberType) {
-            this(new StringBuilder(), overloadingContext, variableContexts, importMap, numberType);
+        public ExpContext(OverloadingContext overloadingContext, VariableSetContext variableContexts, ImportContext importContext, NumberType numberType) {
+            this(new StringBuilder(), overloadingContext, variableContexts, importContext, numberType);
         }
 
         private ExpContext copy(StringBuilder stringBuilder) {
-            return new ExpContext(stringBuilder, overloadingContext, variableContexts, importMap, numberType);
+            return new ExpContext(stringBuilder, overloadingContext, variableContexts, importContext, numberType);
         }
 
         public ExpContext append(String string) {
@@ -84,10 +84,10 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         switch (variableContext.getDefineType()) {
             case PARAM, LOCAL -> expContext.append(variableContext.getName());
             case THIS -> expContext.append("this.").append(variableContext.getName());
-            case STATIC -> expContext.append(expContext.importMap.getOrDefault(variableContext.getDefineTypeName(), variableContext.getDefineTypeName()))
+            case STATIC -> expContext.append(expContext.importContext.getSimpleName(variableContext.getDefineTypeName()))
                             .append(".").append(variableContext.getName());
         }
-        return expContext.createResult(variableContext.getType());
+        return expContext.createResult(ClassName.unboxedType(variableContext.getType()));
     }
 
     @Override
@@ -140,18 +140,18 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             return expContext.createResult(ast.getSourceType());
         }
         CastContext cast = res.cast(ast.getSourceType());
-        switch (cast.type()) {
-            case CAST -> expContext.append("(").append(expContext.importMap.getOrDefault(ast.getSourceType(), ast.getSourceType())).append(")")
+        switch (cast.getType()) {
+            case CAST -> expContext.append("(").append(expContext.importContext.getSimpleName(ast.getSourceType())).append(")")
                     .append(subExpContext.toString());
-            case NEW -> expContext.append("new ").append(expContext.importMap.getOrDefault(ast.getSourceType(), ast.getSourceType()))
+            case NEW -> expContext.append("new ").append(expContext.importContext.getSimpleName(ast.getSourceType()))
                     .append("(").append(subExpContext.toString()).append(")");
             case METHOD -> expContext.append(subExpContext.toString())
-                    .append(".").append(cast.name()).append("()");
+                    .append(".").append(cast.getName()).append("()");
             case STATIC_METHOD -> {
-                expContext.append(expContext.importMap.getOrDefault(cast.className(), cast.className())).append(".").append(cast.name())
+                expContext.append(expContext.importContext.getSimpleName(cast.getClassName())).append(".").append(cast.getName())
                         .append("(").append(subExpContext.toString()).append(")");
             }
-            default -> throw new UnsupportedOperationException("unknown cast type: " + cast.type());
+            default -> throw new UnsupportedOperationException("unknown cast type: " + cast.getType());
         }
         return expContext.createResult(ast.getSourceType());
     }
@@ -160,25 +160,25 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         ExpContext subExpContext = expContext.copy(new StringBuilder());
         ExpResult res = ast.getLeft().accept(this, subExpContext);
         OperatorOverloadingContext overloading = getOverloading.apply(res.overloadingContext);
-        return switch (overloading.type()) {
+        return switch (overloading.getType()) {
             case PRIMITIVE -> {
-                expContext.append("(").append(subExpContext.toString()).append(overloading.name());
-                ast.getRight().accept(this, expContext);
+                expContext.append("(").append(subExpContext.toString()).append(overloading.getName());
+                ExpResult rightRes = ast.getRight().accept(this, expContext);
                 expContext.append(")");
-                yield expContext.createResult(overloading.resultType());
+                yield expContext.createResult(ClassName.getPrimitiveType(res.type, rightRes.type));
             }
             case METHOD -> {
-                expContext.append(subExpContext.toString()).append(".").append(overloading.name()).append("(");
+                expContext.append(subExpContext.toString()).append(".").append(overloading.getName()).append("(");
                 ast.getRight().accept(this, expContext);
                 expContext.append(")");
-                yield expContext.createResult(overloading.resultType());
+                yield expContext.createResult(overloading.getResultType());
             }
             case STATIC_METHOD -> {
-                expContext.append(expContext.importMap.getOrDefault(overloading.className(), overloading.className())).append(".").append(overloading.name());
+                expContext.append(expContext.importContext.getSimpleName(overloading.getClassName())).append(".").append(overloading.getName());
                 expContext.append("(").append(subExpContext.toString()).append(", ");
                 ast.getRight().accept(this, expContext);
                 expContext.append(")");
-                yield expContext.createResult(overloading.resultType());
+                yield expContext.createResult(overloading.getResultType());
             }
         };
     }

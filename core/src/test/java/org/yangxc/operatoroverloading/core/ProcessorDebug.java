@@ -23,9 +23,8 @@ public class ProcessorDebug {
                 @OperatorService(imports={BigDecimal.class})
                 public interface BaseService {
                 
-
-                    @ServiceFunction("a*Complex.I")
-                    Complex rotation90(Complex a);
+                    @ServiceFunction(value = "s")
+                    double multiCast(String s);
                 
                 }
                 """;

@@ -18,12 +18,12 @@ public class ClassOverloadingContext {
     }
 
     public ClassOverloadingContext set(OperatorOverloadingContext context) {
-        operatorMap.put(context.operator(), context);
+        operatorMap.put(context.getOperator(), context);
         return this;
     }
 
     public ClassOverloadingContext set(CastContext context) {
-        castToMap.put(context.to(), context);
+        castToMap.put(context.getTo(), context);
         return this;
     }
 

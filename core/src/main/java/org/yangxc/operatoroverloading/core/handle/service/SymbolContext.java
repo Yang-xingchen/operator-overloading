@@ -28,14 +28,6 @@ public class SymbolContext {
                 .collect(Collectors.toMap(ClassName::getSimpleName, Function.identity()));
     }
 
-    public void put(VariableContext variableContext) {
-        variableContexts.add(variableContext);
-    }
-
-    public String getVarType(String varName) {
-        return variableContexts.get(varName).getType();
-    }
-
     public boolean isVar(String type, String name) {
         return variableContexts.contains(type + "." + name);
     }

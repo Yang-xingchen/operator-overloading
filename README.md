@@ -32,7 +32,7 @@
 @OperatorService(imports = BigDecimal.class)                                                                        // 1
 public interface BaseService {                                                                                      // 2
 
-    @ServiceFunction(                                                                                              // 3
+    @ServiceFunction(                                                                                               // 3
             statements = {                                                                                          // 4
                     @Statement(type = BigDecimal.class, varName = "a", exp = "-12.34e2-.56-(.78e-2+(BigDecimal)b)") // 5
             },
@@ -47,7 +47,7 @@ public interface BaseService {                                                  
 ```java
 BaseService service = Overloading.create(BaseService.class);                                                           // 8
 // 结果为: -1234.5678
-double res = service.test(1);                                                                                       // 9
+double res = service.test(1);                                                                                          // 9
 ```
 
 - 在`2`处定义了一个接口
@@ -67,8 +67,7 @@ double res = service.test(1);                                                   
 
 > [!TIP]
 > 表达式中可使用的变量如下:
-> 1. 由[OperatorClassConst](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/OperatorClassConst.java)定义的静态变量
->   - 内置可用常量见[ConstantContext](core/src/main/java/org/yangxc/operatoroverloading/core/constant/ConstantContext.java)
+> 1. 由[OperatorClassConst](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/OperatorClassConst.java)定义的静态变量(内置可用常量见[ConstantContext](core/src/main/java/org/yangxc/operatoroverloading/core/constant/ConstantContext.java))
 > 2. 由[ServiceField](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/ServiceField.java)定义的实例字段
 > 3. 方法入参
 > 4. 由[Statement](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/Statement.java)定义的本地变量
@@ -181,8 +180,8 @@ public class Complex {                                  // 2
 > 为避免非预期情况发生，操作数的类型及返回类型建议都相同。
 
 # TODO LIST
-> - _斜体_为未计划，不一定会实现
-> - ~~删除线~~为暂未找到解决方案
+> - _斜体_ 为未计划，不一定会实现
+> - ~~删除线~~ 为暂未找到解决方案
 
 - [ ] 支持将科学计数法转成普通数值
 - [ ] 自动化导入(消除`spi`使用)
@@ -194,6 +193,7 @@ public class Complex {                                  // 2
 - [ ] _支持泛型_
 - [ ] _内置其他数学类，如: 复数、向量、矩阵_
 - [ ] _转移至`java8`版本_
+- [ ] _优化表达式，如: 常量折叠_
 - [ ] ~~支持变量访问`public`字段~~(无法获取字段类型，可通过本地变量+自定义代码(`@Statement#parse`)实现类似功能)
 - [ ] ~~支持变量调用方法~~(无法获取返回值类型，可通过本地变量+自定义代码(`@Statement#parse`)实现类似功能)
 - [ ] ~~支持调用静态方法~~(无法获取返回值类型，可通过本地变量+自定义代码(`@Statement#parse`)实现类似功能)

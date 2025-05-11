@@ -6,7 +6,9 @@ import org.yangxc.operatoroverloading.core.annotation.OperatorService;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
+import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
+import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
@@ -23,8 +25,8 @@ public class ServiceHandle {
     private final AstParse astParse;
     private final TypeElement typeElement;
 
-    private ExecutableElement valueElement;
-    private String value;
+    private ExecutableElement classNameElement;
+    private String className;
     private ExecutableElement numberTypeElement;
     private NumberType numberType;
     private ExecutableElement importsElement;
@@ -50,47 +52,53 @@ public class ServiceHandle {
                 .orElseThrow(() -> new ElementException("@OperatorService not found", typeElement))
                 .getElementValues()
                 .forEach((executableElement, annotationValue) -> {
-                    String name = executableElement.getSimpleName().toString();
-                    if ("value".equals(name)) {
-                        valueElement = executableElement;
-                        value = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public String visitString(String s, Object object) {
-                                return s;
-                            }
-                        }, null);
-                    } else if ("numberType".equals(name)) {
-                        numberTypeElement = executableElement;
-                        numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public NumberType visitEnumConstant(VariableElement c, Object object) {
-                                return NumberType.valueOf(c.getSimpleName().toString());
-                            }
-                        }, null);
-                    } else if ("imports".equals(name)) {
-                        importsElement = executableElement;
-                        imports = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
-                                return vals.stream().map(val -> val.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                                    @Override
-                                    public String visitType(TypeMirror t, Object object) {
-                                        return t.toString();
-                                    }
-                                }, null)).toList();
-                            }
-                        }, null);
-                    } else if ("doc".equals(name)) {
-                        docElement = executableElement;
-                        docType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public DocType visitEnumConstant(VariableElement c, Object object) {
-                                return DocType.valueOf(c.getSimpleName().toString());
-                            }
-                        }, null);
+                    try {
+                        String name = executableElement.getSimpleName().toString();
+                        if ("value".equals(name)) {
+                            classNameElement = executableElement;
+                            className = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public String visitString(String s, Object object) {
+                                    return s;
+                                }
+                            }, null);
+                        } else if ("numberType".equals(name)) {
+                            numberTypeElement = executableElement;
+                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public NumberType visitEnumConstant(VariableElement c, Object object) {
+                                    return NumberType.valueOf(c.getSimpleName().toString());
+                                }
+                            }, null);
+                        } else if ("imports".equals(name)) {
+                            importsElement = executableElement;
+                            imports = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
+                                    return vals.stream().map(val -> val.accept(new BaseAnnotationValueVisitor<String, Object>() {
+                                        @Override
+                                        public String visitType(TypeMirror t, Object object) {
+                                            return t.toString();
+                                        }
+                                    }, null)).toList();
+                                }
+                            }, null);
+                        } else if ("doc".equals(name)) {
+                            docElement = executableElement;
+                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public DocType visitEnumConstant(VariableElement c, Object object) {
+                                    return DocType.valueOf(c.getSimpleName().toString());
+                                }
+                            }, null);
+                        }
+                    } catch (ElementException e) {
+                        throw e;
+                    } catch (Throwable e) {
+                        throw new ElementException(e, executableElement);
                     }
                 });
-        value = value != null && value.trim().isEmpty() ? value.trim() : (typeElement.getSimpleName() + "Impl");
+        className = className != null && className.trim().isEmpty() ? className.trim() : (typeElement.getSimpleName() + "Impl");
         numberType = numberType != null && numberType != NumberType.INHERIT ? numberType : NumberType.BIG_DECIMAL;
         docType = docType != null && docType != DocType.INHERIT ? docType : DocType.DOC;
         imports = imports != null ? imports : List.of();
@@ -160,7 +168,7 @@ public class ServiceHandle {
     }
 
     private String getClassName() {
-        return value;
+        return className;
     }
 
     public NumberType getNumberType() {
@@ -194,11 +202,11 @@ public class ServiceHandle {
                     functionHandles.stream().flatMap(FunctionHandle::getUseClasses),
                     this.imports.stream()
             ).collect(Collectors.toSet());
-            Map<String, String> importMap = context.handelImport(imports);
+            ImportContext importContext = context.handelImport(imports);
             context.setFieldList(fieldHandles.stream().flatMap(FieldHandle::writeParams).toList());
             context.setFunctionWrites(Stream.concat(
-                    fieldHandles.stream().map(fieldHandle -> fieldHandle.writeFunction(importMap)).filter(Objects::nonNull),
-                    functionHandles.stream().map(functionHandle -> functionHandle.writerContext(importMap))
+                    fieldHandles.stream().map(fieldHandle -> fieldHandle.writeFunction(importContext)).filter(Objects::nonNull),
+                    functionHandles.stream().map(functionHandle -> functionHandle.writerContext(importContext))
             ).toList());
             return context;
         } catch (ElementException e) {

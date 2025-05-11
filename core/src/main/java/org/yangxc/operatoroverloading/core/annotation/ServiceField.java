@@ -6,11 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * <pre>
  * 定义service类的实例字段
  * 通过setter方法定义
  * 方法名称随意
  * 返回值必须为void或该接口类型(返回`this`)
  * 参数至少有一个。类型为该字段类型，名称为该字段名称(也可通过该注解定义名称，此时列表数量和参数数量需匹配)
+ * </pre>
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.METHOD)

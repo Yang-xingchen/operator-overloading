@@ -7,14 +7,13 @@ import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.constant.ClassOverloading;
 import org.yangxc.operatoroverloading.core.constant.OperatorMethodType;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
-import org.yangxc.operatoroverloading.core.handle.service.BaseAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
 import javax.lang.model.element.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OverloadingContext {
 
@@ -98,16 +97,16 @@ public class OverloadingContext {
                 });
     }
 
+    private void put(OperatorOverloadingContext context) {
+        map.computeIfAbsent(context.getParamType(), ClassOverloadingContext::new).set(context);
+    }
+
+    private void put(CastContext context) {
+        map.computeIfAbsent(context.getFrom(), ClassOverloadingContext::new).set(context);
+    }
+
     public ClassOverloadingContext get(String type) {
         return map.get(type);
-    }
-
-    public void put(OperatorOverloadingContext context) {
-        map.computeIfAbsent(context.paramType(), ClassOverloadingContext::new).set(context);
-    }
-
-    public void put(CastContext context) {
-        map.computeIfAbsent(context.from(), ClassOverloadingContext::new).set(context);
     }
 
     public Set<String> typeSet() {

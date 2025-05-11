@@ -3,9 +3,12 @@ package org.yangxc.operatoroverloading.core.handle.service;
 import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.ast.tree.Ast;
+import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
+import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
+import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
@@ -13,7 +16,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -39,47 +42,53 @@ public class StatementHandle {
     public StatementHandle(AnnotationMirror annotationMirror, int index) {
         this.index = index;
         annotationMirror.getElementValues().forEach((executableElement, annotationValue) -> {
-            String name = executableElement.getSimpleName().toString();
-            if ("type".equals(name)) {
-                typeElement = executableElement;
-                type = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                    @Override
-                    public TypeMirror visitType(TypeMirror t, Object o) {
-                        return t;
-                    }
-                }, null);
-            } else if ("varName".equals(name)) {
-                varNameElement = executableElement;
-                varName = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                    @Override
-                    public String visitString(String s, Object o) {
-                        return s;
-                    }
-                }, null);
-            } else if ("exp".equals(name)) {
-                expElement = executableElement;
-                exp = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                    @Override
-                    public String visitString(String s, Object o) {
-                        return s;
-                    }
-                }, null);
-            } else if ("numberType".equals(name)) {
-                numberTypeElement = executableElement;
-                numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                    @Override
-                    public NumberType visitEnumConstant(VariableElement c, Object object) {
-                        return NumberType.valueOf(c.getSimpleName().toString());
-                    }
-                }, null);
-            } else if ("pares".equals(name)) {
-                parseElement = executableElement;
-                parse = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                    @Override
-                    public Boolean visitBoolean(boolean b, Object object) {
-                        return b;
-                    }
-                }, null);
+            try {
+                String name = executableElement.getSimpleName().toString();
+                if ("type".equals(name)) {
+                    typeElement = executableElement;
+                    type = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                        @Override
+                        public TypeMirror visitType(TypeMirror t, Object o) {
+                            return t;
+                        }
+                    }, null);
+                } else if ("varName".equals(name)) {
+                    varNameElement = executableElement;
+                    varName = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                        @Override
+                        public String visitString(String s, Object o) {
+                            return s;
+                        }
+                    }, null);
+                } else if ("exp".equals(name)) {
+                    expElement = executableElement;
+                    exp = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                        @Override
+                        public String visitString(String s, Object o) {
+                            return s;
+                        }
+                    }, null);
+                } else if ("numberType".equals(name)) {
+                    numberTypeElement = executableElement;
+                    numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                        @Override
+                        public NumberType visitEnumConstant(VariableElement c, Object object) {
+                            return NumberType.valueOf(c.getSimpleName().toString());
+                        }
+                    }, null);
+                } else if ("pares".equals(name)) {
+                    parseElement = executableElement;
+                    parse = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                        @Override
+                        public Boolean visitBoolean(boolean b, Object object) {
+                            return b;
+                        }
+                    }, null);
+                }
+            } catch (ElementException e) {
+                throw e;
+            } catch (Throwable e) {
+                throw new ElementException(e, executableElement);
             }
         });
         numberType = numberType != null ? numberType : NumberType.INHERIT;
@@ -123,20 +132,29 @@ public class StatementHandle {
     }
 
     public Stream<String> getUseClasses() {
+        Stream<String> parseImport = Stream.empty();
+        if (parse) {
+            GetImportVisitor.ExpResult result = ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContexts, numberType));
+            if (Objects.equals(result.getType(), type.toString())) {
+                parseImport = result.stream();
+            } else {
+                CastContext cast = result.cast(type.toString());
+                Stream<String> returnCast = cast.getType() == CastMethodType.STATIC_METHOD ? Stream.of(cast.getClassName()) : Stream.empty();
+                parseImport = Stream.concat(result.stream(), returnCast);
+            }
+        }
         return Stream.of(
                 Stream.of(type).map(TypeMirror::toString),
-                parse
-                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContexts, numberType)).stream()
-                        : Stream.<String>empty()
+                parseImport
         ).flatMap(Function.identity());
     }
 
-    public String write(Map<String, String> importMap) {
+    public String write(ImportContext importContext) {
         String type;
         String simpleType;
         try {
             type = this.type.toString();
-            simpleType = importMap.getOrDefault(type, type);
+            simpleType = importContext.getSimpleName(type);
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
@@ -162,7 +180,7 @@ public class StatementHandle {
         ExpVisitor.ExpContext expContext;
         ExpVisitor.ExpResult result;
         try {
-            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContexts, importMap, numberType);
+            expContext = new ExpVisitor.ExpContext(stringBuilder, overloadingContext, variableContexts, importContext, numberType);
             result = ast.accept(ExpVisitor.INSTANCE, expContext);
         } catch (ElementException e) {
             throw e;
@@ -174,11 +192,11 @@ public class StatementHandle {
                 return expContext.append(";").toString();
             }
             CastContext cast = result.cast(type);
-            return switch (cast.type()) {
+            return switch (cast.getType()) {
                 case CAST -> "(" + simpleType + ")" + expContext + ";";
                 case NEW -> "new " + simpleType + "(" + expContext + ");";
-                case METHOD -> expContext.append(".").append(cast.name()).append("()'").toString();
-                case STATIC_METHOD -> importMap.getOrDefault(cast.className(), cast.className()) + "." + cast.name() +
+                case METHOD -> expContext.append(".").append(cast.getName()).append("()'").toString();
+                case STATIC_METHOD -> importContext.getSimpleName(cast.getClassName()) + "." + cast.getName() +
                         "(" + expContext + ");";
             };
         } catch (ElementException e) {

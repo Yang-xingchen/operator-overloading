@@ -3,7 +3,9 @@ package org.yangxc.operatoroverloading.core.handle.service;
 import org.yangxc.operatoroverloading.core.annotation.ServiceField;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.writer.FunctionWriterContext;
+import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.Param;
+import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -20,8 +22,8 @@ public class FieldHandle {
     private final ExecutableElement element;
     private final boolean isDefault;
 
-    private ExecutableElement valueElement;
-    private List<String> value;
+    private ExecutableElement namesElement;
+    private List<String> names;
 
     private List<VariableContext> variableContext;
     private Map<String, VariableElement> variableElementMap = new HashMap<>();
@@ -44,35 +46,41 @@ public class FieldHandle {
                 .orElseThrow(() -> new ElementException("@ServiceField not found", element))
                 .getElementValues()
                 .forEach((executableElement, annotationValue) -> {
-                    String name = executableElement.getSimpleName().toString();
-                    if ("value".equals(name)) {
-                        valueElement = executableElement;
-                        value = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
-                                return vals.stream().map(v -> v.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                                    @Override
-                                    public String visitString(String s, Object object) {
-                                        return s;
-                                    }
-                                }, null)).toList();
-                            }
-                        }, null);
+                    try {
+                        String name = executableElement.getSimpleName().toString();
+                        if ("value".equals(name)) {
+                            namesElement = executableElement;
+                            names = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
+                                    return vals.stream().map(v -> v.accept(new BaseAnnotationValueVisitor<String, Object>() {
+                                        @Override
+                                        public String visitString(String s, Object object) {
+                                            return s;
+                                        }
+                                    }, null)).toList();
+                                }
+                            }, null);
+                        }
+                    } catch (ElementException e) {
+                        throw e;
+                    } catch (Throwable e) {
+                        throw new ElementException(e, executableElement);
                     }
                 });
-        if (value == null || value.isEmpty()) {
+        if (names == null || names.isEmpty()) {
             variableContext = new ArrayList<>(element.getParameters().size());
             for (VariableElement parameter : element.getParameters()) {
                 VariableContext var = VariableContext.createByThis(parameter.asType().toString(), parameter.getSimpleName().toString());
                 variableContext.add(var);
                 variableElementMap.put(var.getQualifiedName(), parameter);
             }
-        } else if (value.size() == parameters.size()) {
+        } else if (names.size() == parameters.size()) {
             variableContext = new ArrayList<>(element.getParameters().size());
             List<? extends VariableElement> elementParameters = element.getParameters();
             for (int i = 0; i < elementParameters.size(); i++) {
                 VariableElement parameter = elementParameters.get(i);
-                VariableContext var = VariableContext.createByThis(parameter.asType().toString(), value.get(i));
+                VariableContext var = VariableContext.createByThis(parameter.asType().toString(), names.get(i));
                 variableContext.add(var);
                 variableElementMap.put(var.getQualifiedName(), parameter);
             }
@@ -117,7 +125,7 @@ public class FieldHandle {
                 .map(context -> new Param(context.getType(), context.getName()));
     }
 
-    public FunctionWriterContext writeFunction(Map<String, String> importMap) {
+    public FunctionWriterContext writeFunction(ImportContext importContext) {
         if (isDefault) {
             return null;
         }
@@ -125,12 +133,12 @@ public class FieldHandle {
             FunctionWriterContext write = new FunctionWriterContext();
             write.setDocLines(docLines);
             String returnType = element.getReturnType().toString();
-            write.setReturnType(importMap.getOrDefault(returnType, returnType));
+            write.setReturnType(importContext.getSimpleName(returnType));
             write.setName(element.getSimpleName().toString());
-            List<Param> params = element.getParameters().stream().map(variableElement -> {
+            List<Param> params = variableElementMap.values().stream().map(variableElement -> {
                 try {
                     String type = variableElement.asType().toString();
-                    return new Param(importMap.getOrDefault(type, type), variableElement.getSimpleName().toString());
+                    return new Param(importContext.getSimpleName(type), variableElement.getSimpleName().toString());
                 } catch (ElementException e) {
                     throw e;
                 } catch (Throwable e) {
@@ -140,7 +148,7 @@ public class FieldHandle {
             write.setParams(params);
             write.setThrowList(element.getThrownTypes().stream()
                     .map(TypeMirror::toString)
-                    .map(throwType -> importMap.getOrDefault(throwType, throwType))
+                    .map(importContext::getSimpleName)
                     .toList());
             List<String> lines = new ArrayList<>();
             for (VariableContext context : variableContext) {

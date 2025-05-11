@@ -5,11 +5,14 @@ import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.annotation.ServiceFunction;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.ast.tree.Ast;
+import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.writer.FunctionWriterContext;
+import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.Param;
+import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -18,7 +21,10 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -26,8 +32,8 @@ public class FunctionHandle {
 
     private final ExecutableElement element;
 
-    private ExecutableElement valueElement;
-    private String value;
+    private ExecutableElement expElement;
+    private String exp;
     private ExecutableElement statementsElement;
     private List<StatementHandle> statementHandles;
     private ExecutableElement numberTypeElement;
@@ -51,62 +57,68 @@ public class FunctionHandle {
                 .orElseThrow(() -> new ElementException("@ServiceFunction not found", element))
                 .getElementValues()
                 .forEach((executableElement, annotationValue) -> {
-                    String name = executableElement.getSimpleName().toString();
-                    if ("value".equals(name)) {
-                        valueElement = executableElement;
-                        value = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public String visitString(String s, Object object) {
-                                return s;
-                            }
-                        }, null);
-                    } else if ("statements".equals(name)) {
-                        statementsElement = executableElement;
-                        statementHandles = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public List<StatementHandle> visitArray(List<? extends AnnotationValue> vals, Object o) {
-                                List<StatementHandle> list = new ArrayList<>();
-                                for (int i = 0; i < vals.size(); i++) {
-                                    AnnotationValue values = vals.get(i);
-                                    int index = i;
-                                    StatementHandle statementHandle = values.accept(new BaseAnnotationValueVisitor<>() {
-                                        @Override
-                                        public StatementHandle visitAnnotation(AnnotationMirror a, Object object) {
-                                            return new StatementHandle(a, index);
-                                        }
-                                    }, null);
-                                    list.add(statementHandle);
+                    try {
+                        String name = executableElement.getSimpleName().toString();
+                        if ("value".equals(name)) {
+                            expElement = executableElement;
+                            exp = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public String visitString(String s, Object object) {
+                                    return s;
                                 }
-                                return list;
-                            }
-                        }, null);
-                    } else if ("numberType".equals(name)) {
-                        numberTypeElement = executableElement;
-                        numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public NumberType visitEnumConstant(VariableElement c, Object object) {
-                                return NumberType.valueOf(c.getSimpleName().toString());
-                            }
-                        }, null);
-                    } else if ("doc".equals(name)) {
-                        docElement = executableElement;
-                        docType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public DocType visitEnumConstant(VariableElement c, Object object) {
-                                return DocType.valueOf(c.getSimpleName().toString());
-                            }
-                        }, null);
-                    } else if ("pares".equals(name)) {
-                        parseElement = executableElement;
-                        parse = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
-                            @Override
-                            public Boolean visitBoolean(boolean b, Object object) {
-                                return b;
-                            }
-                        }, null);
+                            }, null);
+                        } else if ("statements".equals(name)) {
+                            statementsElement = executableElement;
+                            statementHandles = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public List<StatementHandle> visitArray(List<? extends AnnotationValue> vals, Object o) {
+                                    List<StatementHandle> list = new ArrayList<>();
+                                    for (int i = 0; i < vals.size(); i++) {
+                                        AnnotationValue values = vals.get(i);
+                                        int index = i;
+                                        StatementHandle statementHandle = values.accept(new BaseAnnotationValueVisitor<>() {
+                                            @Override
+                                            public StatementHandle visitAnnotation(AnnotationMirror a, Object object) {
+                                                return new StatementHandle(a, index);
+                                            }
+                                        }, null);
+                                        list.add(statementHandle);
+                                    }
+                                    return list;
+                                }
+                            }, null);
+                        } else if ("numberType".equals(name)) {
+                            numberTypeElement = executableElement;
+                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public NumberType visitEnumConstant(VariableElement c, Object object) {
+                                    return NumberType.valueOf(c.getSimpleName().toString());
+                                }
+                            }, null);
+                        } else if ("doc".equals(name)) {
+                            docElement = executableElement;
+                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public DocType visitEnumConstant(VariableElement c, Object object) {
+                                    return DocType.valueOf(c.getSimpleName().toString());
+                                }
+                            }, null);
+                        } else if ("pares".equals(name)) {
+                            parseElement = executableElement;
+                            parse = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                @Override
+                                public Boolean visitBoolean(boolean b, Object object) {
+                                    return b;
+                                }
+                            }, null);
+                        }
+                    } catch (ElementException e) {
+                        throw e;
+                    } catch (Throwable e) {
+                        throw new ElementException(e, executableElement);
                     }
                 });
-        if (value == null || value.isBlank()) {
+        if (exp == null || exp.isBlank()) {
             throw new ElementException("ServiceFunction#value is blank", element);
         }
         numberType = numberType != null ? numberType : NumberType.INHERIT;
@@ -143,7 +155,7 @@ public class FunctionHandle {
                     }
                     return "   " + s.getVarName() + " = " + s.getExp();
                 }).forEach(exp::add);
-                exp.add("   return " + value);
+                exp.add("   return " + this.exp);
                 exp.add(" </pre>");
                 if (this.docType == DocType.EXP) {
                     docLines = exp;
@@ -222,11 +234,11 @@ public class FunctionHandle {
             return;
         }
         try {
-            ast = astParse.parse(value, new SymbolContext(variableContexts, imports));
+            ast = astParse.parse(exp, new SymbolContext(variableContexts, imports));
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
-            throw new ElementException(e, valueElement);
+            throw new ElementException(e, expElement);
         }
     }
 
@@ -235,7 +247,7 @@ public class FunctionHandle {
     }
 
     public String getExp() {
-        return value;
+        return exp;
     }
 
     public NumberType getNumberType() {
@@ -247,30 +259,39 @@ public class FunctionHandle {
     }
 
     public Stream<String> getUseClasses() {
+        Stream<String> parseImport = Stream.empty();
+        if (parse) {
+            GetImportVisitor.ExpResult result = ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContexts, numberType));
+            if (Objects.equals(result.getType(), element.getReturnType().toString())) {
+                parseImport = result.stream();
+            } else {
+                CastContext cast = result.cast(element.getReturnType().toString());
+                Stream<String> returnCast = cast.getType() == CastMethodType.STATIC_METHOD ? Stream.of(cast.getClassName()) : Stream.empty();
+                parseImport = Stream.concat(result.stream(), returnCast);
+            }
+        }
         return Stream.of(
                 Stream.of(element.getReturnType())
                         .map(TypeMirror::toString),
                 element.getParameters().stream()
                         .map(VariableElement::asType)
                         .map(TypeMirror::toString),
-                parse
-                        ? ast.accept(GetImportVisitor.INSTANCE, new GetImportVisitor.ExpContext(overloadingContext, variableContexts, numberType)).stream()
-                        : Stream.<String>empty(),
+                parseImport,
                 statementHandles.stream().flatMap(StatementHandle::getUseClasses)
         ).flatMap(Function.identity());
     }
 
-    public FunctionWriterContext writerContext(Map<String, String> importMap) {
+    public FunctionWriterContext writerContext(ImportContext importContext) {
         try {
             FunctionWriterContext write = new FunctionWriterContext();
             write.setDocLines(docLines);
             String returnType = element.getReturnType().toString();
-            write.setReturnType(importMap.getOrDefault(returnType, returnType));
+            write.setReturnType(importContext.getSimpleName(returnType));
             write.setName(element.getSimpleName().toString());
             List<Param> params = element.getParameters().stream().map(variableElement -> {
                 try {
                     String type = variableElement.asType().toString();
-                    return new Param(importMap.getOrDefault(type, type), variableElement.getSimpleName().toString());
+                    return new Param(importContext.getSimpleName(type), variableElement.getSimpleName().toString());
                 } catch (ElementException e) {
                     throw e;
                 } catch (Throwable e) {
@@ -278,13 +299,13 @@ public class FunctionHandle {
                 }
             }).toList();
             write.setParams(params);
-            write.setThrowList(element.getThrownTypes().stream().map(TypeMirror::toString).map(throwType -> importMap.getOrDefault(throwType, throwType)).toList());
-            List<String> statementLine = statementHandles.stream().map(statementHandle -> statementHandle.write(importMap)).toList();
+            write.setThrowList(element.getThrownTypes().stream().map(TypeMirror::toString).map(importContext::getSimpleName).toList());
+            List<String> statementLine = statementHandles.stream().map(statementHandle -> statementHandle.write(importContext)).toList();
             StringBuilder retLine = new StringBuilder();
             if (element.getReturnType().getKind() != TypeKind.VOID) {
                 retLine.append("return ");
             }
-            retLine.append(getExpString(ast, importMap, element.getReturnType()));
+            retLine.append(getExpString(ast, importContext, element.getReturnType()));
             write.setBodyLines(Stream.concat(statementLine.stream(), Stream.of(retLine.toString())).toList());
             return write;
         } catch (ElementException e) {
@@ -294,23 +315,23 @@ public class FunctionHandle {
         }
     }
 
-    private String getExpString(Ast ast, Map<String, String> importMap, TypeMirror resType) {
+    private String getExpString(Ast ast, ImportContext importContext, TypeMirror resType) {
         if (!parse) {
-            return value + ";";
+            return exp + ";";
         }
-        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, variableContexts, importMap, numberType);
+        ExpVisitor.ExpContext expContext = new ExpVisitor.ExpContext(overloadingContext, variableContexts, importContext, numberType);
         ExpVisitor.ExpResult result = ast.accept(ExpVisitor.INSTANCE, expContext);
         String type = resType.toString();
         if (Objects.equals(result.getType(), type)) {
             return expContext.append(";").toString();
         }
         CastContext cast = result.cast(type);
-        String simpleType = importMap.getOrDefault(type, type);
-        return switch (cast.type()) {
+        String simpleType = importContext.getSimpleName(type);
+        return switch (cast.getType()) {
             case CAST -> "(" + simpleType + ")" + expContext + ";";
             case NEW -> "new " + simpleType + "(" + expContext + ");";
-            case METHOD -> expContext.append(".").append(cast.name()).append("();").toString();
-            case STATIC_METHOD -> importMap.getOrDefault(cast.className(), cast.className()) + "." + cast.name() +
+            case METHOD -> expContext.append(".").append(cast.getName()).append("();").toString();
+            case STATIC_METHOD -> importContext.getSimpleName(cast.getClassName()) + "." + cast.getName() +
                     "(" + expContext + ");";
         };
     }

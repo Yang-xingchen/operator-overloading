@@ -66,9 +66,9 @@ public class GetImportVisitor implements AstVisitor<GetImportVisitor.ExpContext,
     public ExpResult visit(VariableAst ast, ExpContext expContext) {
         VariableContext variableContext = expContext.variableContexts.get(ast.toString());
         if (variableContext.getDefineType() == VariableDefineType.STATIC) {
-            return expContext.createResult(variableContext.getType(), Stream.of(variableContext.getDefineTypeName()));
+            return expContext.createResult(ClassName.unboxedType(variableContext.getType()), Stream.of(variableContext.getDefineTypeName()));
         }
-        return expContext.createResult(variableContext.getType(), Stream.empty());
+        return expContext.createResult(ClassName.unboxedType(variableContext.getType()), Stream.empty());
     }
 
     @Override
@@ -98,10 +98,10 @@ public class GetImportVisitor implements AstVisitor<GetImportVisitor.ExpContext,
             return expContext.createResult(ast.getSourceType(), Stream.empty());
         }
         CastContext cast = res.cast(ast.getSourceType());
-        return switch (cast.type()) {
+        return switch (cast.getType()) {
             case CAST, NEW -> expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(ast.getSourceType())));
             case METHOD -> expContext.createResult(ast.getSourceType(), res.stream);
-            case STATIC_METHOD -> expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(cast.className())));
+            case STATIC_METHOD -> expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(cast.getClassName())));
         };
     }
 
@@ -109,10 +109,11 @@ public class GetImportVisitor implements AstVisitor<GetImportVisitor.ExpContext,
         ExpResult leftRes = ast.getLeft().accept(this, expContext);
         ExpResult rightRes = ast.getRight().accept(this, expContext);
         OperatorOverloadingContext overloading = getOverloading.apply(leftRes.overloadingContext);
-        return switch (overloading.type()) {
-            case PRIMITIVE, METHOD -> expContext.createResult(overloading.resultType(), Stream.concat(leftRes.stream, rightRes.stream));
-            case STATIC_METHOD -> expContext.createResult(overloading.resultType(),
-                    Stream.of(leftRes.stream, rightRes.stream, Stream.of(overloading.className())).flatMap(Function.identity()));
+        return switch (overloading.getType()) {
+            case PRIMITIVE -> expContext.createResult(ClassName.getPrimitiveType(leftRes.type, rightRes.type), Stream.concat(leftRes.stream, rightRes.stream));
+            case METHOD -> expContext.createResult(overloading.getResultType(), Stream.concat(leftRes.stream, rightRes.stream));
+            case STATIC_METHOD -> expContext.createResult(overloading.getResultType(),
+                    Stream.of(leftRes.stream, rightRes.stream, Stream.of(overloading.getClassName())).flatMap(Function.identity()));
         };
     }
 

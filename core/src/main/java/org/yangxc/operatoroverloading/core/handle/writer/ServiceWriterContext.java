@@ -1,10 +1,10 @@
 package org.yangxc.operatoroverloading.core.handle.writer;
 
-import org.yangxc.operatoroverloading.core.constant.ClassName;
+import org.yangxc.operatoroverloading.core.processor.MainProcessor;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class ServiceWriterContext {
@@ -14,8 +14,7 @@ public class ServiceWriterContext {
     private String className;
     private String interfaceName;
 
-    // qualifiedName-simpleName
-    private Map<String, String> importMap;
+    private ImportContext importContext;
     private List<Param> fieldList;
     private List<FunctionWriterContext> functionWriterContexts;
 
@@ -37,21 +36,9 @@ public class ServiceWriterContext {
         this.interfaceName = interfaceName;
     }
 
-    public Map<String, String> handelImport(Collection<String> imports) {
-        Map<String, List<String>> map = Stream.concat(imports.stream(), Stream.of(GENERATED))
-                .filter(type -> !ClassName.PRIMITIVE_NAME.contains(type))
-                .filter(type -> !type.startsWith("java.lang."))
-                .distinct()
-                .collect(Collectors.groupingBy(ClassName::getSimpleName));
-        importMap = new HashMap<>(map.size());
-        map.forEach((name, list) -> {
-            if (list.size() == 1) {
-                importMap.put(list.getFirst(), name);
-            } else {
-                list.forEach(n -> importMap.put(n, n));
-            }
-        });
-        return importMap;
+    public ImportContext handelImport(Collection<String> imports) {
+        importContext = new ImportContext(Stream.concat(imports.stream(), Stream.of(GENERATED)).toList());
+        return importContext;
     }
 
     public void setFieldList(List<Param> fieldList) {
@@ -63,6 +50,7 @@ public class ServiceWriterContext {
     }
 
     public String code() {
+        String pack = this.pack != null ? ("package " + this.pack + ";\n\n") : "";
         StringBuilder doc = new StringBuilder();
         if (docLines != null) {
             doc.append("/**\n");
@@ -71,17 +59,9 @@ public class ServiceWriterContext {
             }
             doc.append(" */\n");
         }
-        String imports = this.importMap
-                .keySet()
-                .stream()
-                .filter(s -> !Objects.equals(s, this.importMap.get(s)))
-                .sorted()
-                .reduce(new StringBuilder(),
-                        (sb, type) -> sb.append("import ").append(type).append(";\n"),
-                        StringBuilder::append)
-                .toString();
-        String generated = "@" + this.importMap.getOrDefault(GENERATED, GENERATED) + "(" +
-                "value=\"org.yangxc.operatoroverloading.core.processor.MainProcessor\", " +
+        String imports = importContext.write();
+        String generated = "@" + importContext.getSimpleName(GENERATED) + "(" +
+                "value=\"" + MainProcessor.class.getTypeName() + "\", " +
                 "date=\"" + LocalDateTime.now().withNano(0) + "\", " +
                 "comments=\"created by OperatorOverloading\")";
         String className = "public class " + this.className +" implements " + interfaceName;
@@ -89,7 +69,7 @@ public class ServiceWriterContext {
         for (Param field : fieldList) {
             fields.append(TAB)
                     .append("private ")
-                    .append(this.importMap.getOrDefault(field.type(), field.type()))
+                    .append(importContext.getSimpleName(field.type()))
                     .append(" ")
                     .append(field.name())
                     .append(";\n");
@@ -98,7 +78,7 @@ public class ServiceWriterContext {
         for (FunctionWriterContext functionWriterContext : functionWriterContexts) {
             methods.append(functionWriterContext.code(TAB)).append("\n");
         }
-        return (this.pack != null ? ("package " + this.pack + ";\n\n") : "") +
+        return pack +
                 imports + "\n" +
                 doc +
                 generated + "\n" +
