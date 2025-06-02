@@ -47,7 +47,7 @@ public class FunctionWriterContext {
             doc.append(prefix).append(" */\n");
         }
         String paramString = params.stream()
-                .map(param -> param.type() + " " + param.name())
+                .map(param -> param.getType() + " " + param.getName())
                 .collect(Collectors.joining(", "));
         String throwsString = throwList.isEmpty() ? "" : ("throws " + String.join(",", throwList) + " ");
         return doc +

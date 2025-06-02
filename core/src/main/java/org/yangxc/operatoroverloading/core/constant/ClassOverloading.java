@@ -5,6 +5,7 @@ import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OperatorOverloadingContext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.yangxc.operatoroverloading.core.constant.CastMethodType.*;
@@ -189,17 +190,19 @@ public class ClassOverloading {
         DOUBLE_CONTEXT.set(new CastContext(DOUBLE, CAST, null, null, DOUBLE));
     }
 
-    public static final Map<String, ClassOverloadingContext> DEFAULT_CLASS_OVERLOADING = Map.of(
-            BIG_DECIMAL, BIG_DECIMAL_CONTEXT,
-            BIG_INTEGER, BIG_INTEGER_CONTEXT,
-            STRING, STRING_CONTEXT,
-            BYTE, BYTE_CONTEXT,
-            SHORT, SHORT_CONTEXT,
-            INT, INT_CONTEXT,
-            LONG, LONG_CONTEXT,
-            FLOAT, FLOAT_CONTEXT,
-            DOUBLE, DOUBLE_CONTEXT
-    );
+    public static final Map<String, ClassOverloadingContext> DEFAULT_CLASS_OVERLOADING;
+    static {
+        DEFAULT_CLASS_OVERLOADING = new HashMap<>();
+        DEFAULT_CLASS_OVERLOADING.put(BIG_DECIMAL, BIG_DECIMAL_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(BIG_INTEGER, BIG_INTEGER_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(STRING, STRING_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(BYTE, BYTE_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(SHORT, SHORT_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(INT, INT_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(LONG, LONG_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(FLOAT, FLOAT_CONTEXT);
+        DEFAULT_CLASS_OVERLOADING.put(DOUBLE, DOUBLE_CONTEXT);
+    }
 
     private ClassOverloading() {
     }

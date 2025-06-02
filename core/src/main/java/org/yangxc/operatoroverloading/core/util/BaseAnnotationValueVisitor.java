@@ -11,7 +11,7 @@ public abstract class BaseAnnotationValueVisitor<R, P> implements AnnotationValu
 
     @Override
     public R visit(AnnotationValue av) {
-        return AnnotationValueVisitor.super.visit(av);
+        return null;
     }
 
     @Override

@@ -3,13 +3,16 @@ package org.yangxc.operatoroverloading.core.handle.service;
 import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.ast.AstVisitor;
 import org.yangxc.operatoroverloading.core.ast.tree.*;
+import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.constant.ClassName;
+import org.yangxc.operatoroverloading.core.constant.OperatorMethodType;
 import org.yangxc.operatoroverloading.core.constant.VariableDefineType;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -98,23 +101,29 @@ public class GetImportVisitor implements AstVisitor<GetImportVisitor.ExpContext,
             return expContext.createResult(ast.getSourceType(), Stream.empty());
         }
         CastContext cast = res.cast(ast.getSourceType());
-        return switch (cast.getType()) {
-            case CAST, NEW -> expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(ast.getSourceType())));
-            case METHOD -> expContext.createResult(ast.getSourceType(), res.stream);
-            case STATIC_METHOD -> expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(cast.getClassName())));
-        };
+        if (cast.getType() == CastMethodType.CAST || cast.getType() == CastMethodType.NEW) {
+            return expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(ast.getSourceType())));
+        } else if (cast.getType() == CastMethodType.METHOD) {
+            return expContext.createResult(ast.getSourceType(), res.stream);
+        } else if (cast.getType() == CastMethodType.STATIC_METHOD) {
+            return expContext.createResult(ast.getSourceType(), Stream.concat(res.stream, Stream.of(cast.getClassName())));
+        }
+        throw new UnsupportedOperationException("unknown CastMethodType: " + cast.getType());
     }
 
     private ExpResult visitBiOperator(BiAst ast, ExpContext expContext, Function<ClassOverloadingContext, OperatorOverloadingContext> getOverloading) {
         ExpResult leftRes = ast.getLeft().accept(this, expContext);
         ExpResult rightRes = ast.getRight().accept(this, expContext);
         OperatorOverloadingContext overloading = getOverloading.apply(leftRes.overloadingContext);
-        return switch (overloading.getType()) {
-            case PRIMITIVE -> expContext.createResult(ClassName.getPrimitiveType(leftRes.type, rightRes.type), Stream.concat(leftRes.stream, rightRes.stream));
-            case METHOD -> expContext.createResult(overloading.getResultType(), Stream.concat(leftRes.stream, rightRes.stream));
-            case STATIC_METHOD -> expContext.createResult(overloading.getResultType(),
+        if (overloading.getType() == OperatorMethodType.PRIMITIVE) {
+            return expContext.createResult(ClassName.getPrimitiveType(leftRes.type, rightRes.type), Stream.concat(leftRes.stream, rightRes.stream));
+        } else if (overloading.getType() == OperatorMethodType.METHOD) {
+            return expContext.createResult(overloading.getResultType(), Stream.concat(leftRes.stream, rightRes.stream));
+        } else if (overloading.getType() == OperatorMethodType.STATIC_METHOD) {
+            return expContext.createResult(overloading.getResultType(),
                     Stream.of(leftRes.stream, rightRes.stream, Stream.of(overloading.getClassName())).flatMap(Function.identity()));
-        };
+        }
+        throw new UnsupportedOperationException("unknown OperatorMethodType: " + overloading.getType());
     }
 
     @Override

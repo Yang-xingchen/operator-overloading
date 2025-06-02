@@ -9,9 +9,11 @@ import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
 
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LogHandle {
 
@@ -25,8 +27,8 @@ public class LogHandle {
     public LogHandle(Messager messager, String level) {
         this.messager = messager;
         level = level != null ? level : "info";
-        if (!Set.of(NONE, INFO, DEBUG).contains(level)) {
-            messager.printWarning("unknown OperatorOverloadingLog: " + level);
+        if (Stream.of(NONE, INFO, DEBUG).noneMatch(level::equals)) {
+            messager.printMessage(Diagnostic.Kind.WARNING, "unknown OperatorOverloadingLog: " + level);
             level = INFO;
         }
         this.level = level;
@@ -37,17 +39,17 @@ public class LogHandle {
         if (NONE.equals(level)) {
             return;
         }
-        messager.printNote("------------------------[ OperatorOverloading ]------------------------");
-        messager.printNote("issues反馈: https://github.com/Yang-xingchen/operator-overloading/issues");
-        messager.printNote("使用 -AOperatorOverloadingLog=none 仅显示错误信息");
-        messager.printNote("使用 -AOperatorOverloadingLog=info 显示基本信息");
-        messager.printNote("使用 -AOperatorOverloadingLog=debug 显示详细信息");
-        messager.printNote("");
+        messager.printMessage(Diagnostic.Kind.NOTE, "------------------------[ OperatorOverloading ]------------------------");
+        messager.printMessage(Diagnostic.Kind.NOTE, "issues反馈: https://github.com/Yang-xingchen/operator-overloading/issues");
+        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -AOperatorOverloadingLog=none 仅显示错误信息");
+        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -AOperatorOverloadingLog=info 显示基本信息");
+        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -AOperatorOverloadingLog=debug 显示详细信息");
+        messager.printMessage(Diagnostic.Kind.NOTE, "");
     }
 
     public void postAllInit(List<ServiceHandle> handles) {
         if (DEBUG.equals(level) || INFO.equals(level)) {
-            messager.printNote("load services: " + handles.stream().map(ServiceHandle::getTypeElement).map(TypeElement::getQualifiedName).map(Object::toString).toList());
+            messager.printMessage(Diagnostic.Kind.NOTE, "load services: " + handles.stream().map(ServiceHandle::getTypeElement).map(TypeElement::getQualifiedName).map(Object::toString).collect(Collectors.toList()));
         }
     }
 
@@ -60,17 +62,17 @@ public class LogHandle {
                             "\"operator\": \"" + overloadContext.supportOperator().stream().sorted().map(t -> t.symbol).collect(Collectors.joining()) + "\", " +
                             "\"castTo\": [" + overloadContext.supportCast().stream().sorted().map(s -> "\"" + s + "\"").collect(Collectors.joining(", ")) + "]}")
                     .collect(Collectors.toSet());
-            messager.printNote("load overloads: " + msgSet);
+            messager.printMessage(Diagnostic.Kind.NOTE, "load overloads: " + msgSet);
         } else if (INFO.equals(level)) {
-            messager.printNote("load overloads: " + context.typeSet());
+            messager.printMessage(Diagnostic.Kind.NOTE, "load overloads: " + context.typeSet());
         }
     }
 
     public void postAllConst(VariableSetContext context) {
         if (DEBUG.equals(level)) {
-            messager.printNote("load const: " + context.values());
+            messager.printMessage(Diagnostic.Kind.NOTE, "load const: " + context.values());
         } else {
-            messager.printNote("load const: " + context.values().stream().collect(Collectors.groupingBy(VariableContext::getDefineTypeName, Collectors.counting())));
+            messager.printMessage(Diagnostic.Kind.NOTE, "load const: " + context.values().stream().collect(Collectors.groupingBy(VariableContext::getDefineTypeName, Collectors.counting())));
         }
     }
 
@@ -84,9 +86,9 @@ public class LogHandle {
                     .map(this::getFunctionInfo)
                     .collect(Collectors.joining(","));
             msg.append("\"function\": [").append(function).append("]}");
-            messager.printNote(msg.toString(), handle.getTypeElement());
+            messager.printMessage(Diagnostic.Kind.NOTE, msg.toString(), handle.getTypeElement());
         } else if (INFO.equals(level)) {
-            messager.printNote("setup service", handle.getTypeElement());
+            messager.printMessage(Diagnostic.Kind.NOTE, "setup service", handle.getTypeElement());
         }
     }
 
@@ -101,13 +103,13 @@ public class LogHandle {
 
     public void preWrite(ServiceHandle handle, ServiceWriterContext serviceWriterContext) {
         if (DEBUG.equals(level)) {
-            messager.printNote("write code: \n" + serviceWriterContext.code(), handle.getTypeElement());
+            messager.printMessage(Diagnostic.Kind.NOTE, "write code: \n" + serviceWriterContext.code(), handle.getTypeElement());
         }
     }
 
     public void postWrite(ServiceHandle handle, ServiceWriterContext serviceWriterContext) {
         if (INFO.equals(level)) {
-            messager.printNote("write complete", handle.getTypeElement());
+            messager.printMessage(Diagnostic.Kind.NOTE, "write complete", handle.getTypeElement());
         }
     }
 }

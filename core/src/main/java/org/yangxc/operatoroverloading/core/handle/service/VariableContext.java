@@ -45,11 +45,14 @@ public final class VariableContext {
     }
 
     public String getQualifiedName() {
-        return switch (defineType) {
-            case PARAM, LOCAL -> name;
-            case THIS -> "this." + name;
-            case STATIC -> defineTypeName + "." + name;
-        };
+        if (defineType == VariableDefineType.PARAM || defineType == VariableDefineType.LOCAL) {
+            return name;
+        } else if (defineType == VariableDefineType.THIS) {
+            return "this." + name;
+        } else if (defineType == VariableDefineType.STATIC) {
+            return defineTypeName + "." + name;
+        }
+        throw new UnsupportedOperationException("unknown VariableDefineType: " + defineType);
     }
 
     public String getType() {
@@ -68,7 +71,7 @@ public final class VariableContext {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (VariableContext) obj;
+        VariableContext that = (VariableContext) obj;
         return Objects.equals(this.name, that.name) &&
                 Objects.equals(this.type, that.type) &&
                 this.statement == that.statement;

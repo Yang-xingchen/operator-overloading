@@ -11,23 +11,23 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ProcessorDebug {
 
     public static void main(String[] args) throws Exception {
         // 代码
-        String baseCode = """
-                import org.yangxc.operatoroverloading.core.annotation.*;
-                import java.math.BigDecimal;
-                
-                @OperatorService(imports={BigDecimal.class})
-                public interface BaseService {
-                
-                    @ServiceFunction(value = "s")
-                    double multiCast(String s);
-                
-                }
-                """;
+        String baseCode = "import org.yangxc.operatoroverloading.core.annotation.*;\n" +
+                "import java.math.BigDecimal;\n" +
+                "\n" +
+                "@OperatorService(imports={BigDecimal.class})\n" +
+                "public interface BaseService {\n" +
+                "\n" +
+                "    @ServiceFunction(value = \"s\")\n" +
+                "    double multiCast(String s);\n" +
+                "\n" +
+                "}";
         // 执行
         compile(baseCode, new MainProcessor());
 
@@ -41,9 +41,9 @@ public class ProcessorDebug {
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> listener = new DiagnosticCollector<>();
         try (StandardJavaFileManager fileManager = javaCompiler.getStandardFileManager(listener, Locale.CHINA, StandardCharsets.UTF_8)) {
-            List<StringJavaObject> compilationUnits = List.of(new StringJavaObject("BaseService", code));
-            JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, listener, List.of("-AOperatorOverloadingLog=debug"), null, compilationUnits);
-            task.setProcessors(List.of(processor));
+            List<StringJavaObject> compilationUnits = Stream.of(new StringJavaObject("BaseService", code)).collect(Collectors.toList());
+            JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, listener, Stream.of("-AOperatorOverloadingLog=debug").collect(Collectors.toList()), null, compilationUnits);
+            task.setProcessors(Stream.of(processor).collect(Collectors.toList()));
             task.call();
             System.out.println("=== Diagnostics ===");
             listener.getDiagnostics().forEach(System.out::println);

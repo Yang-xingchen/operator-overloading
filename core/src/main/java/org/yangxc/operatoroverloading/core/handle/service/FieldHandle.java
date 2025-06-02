@@ -15,6 +15,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FieldHandle {
@@ -50,7 +51,7 @@ public class FieldHandle {
                         String name = executableElement.getSimpleName().toString();
                         if ("value".equals(name)) {
                             namesElement = executableElement;
-                            names = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            names = annotationValue.accept(new BaseAnnotationValueVisitor<List<String>, Object>() {
                                 @Override
                                 public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
                                     return vals.stream().map(v -> v.accept(new BaseAnnotationValueVisitor<String, Object>() {
@@ -58,7 +59,7 @@ public class FieldHandle {
                                         public String visitString(String s, Object object) {
                                             return s;
                                         }
-                                    }, null)).toList();
+                                    }, null)).collect(Collectors.toList());
                                 }
                             }, null);
                         }
@@ -97,7 +98,7 @@ public class FieldHandle {
     private void setupDoc(Elements elementUtils) {
         try {
             String docComment = elementUtils.getDocComment(element);
-            docLines = docComment != null ? Arrays.stream(docComment.split("\n")).toList() : null;
+            docLines = docComment != null ? Arrays.stream(docComment.split("\n")).collect(Collectors.toList()) : null;
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {
@@ -144,12 +145,12 @@ public class FieldHandle {
                 } catch (Throwable e) {
                     throw new ElementException(e, variableElement);
                 }
-            }).toList();
+            }).collect(Collectors.toList());
             write.setParams(params);
             write.setThrowList(element.getThrownTypes().stream()
                     .map(TypeMirror::toString)
                     .map(importContext::getSimpleName)
-                    .toList());
+                    .collect(Collectors.toList()));
             List<String> lines = new ArrayList<>();
             for (VariableContext context : variableContext) {
                 VariableElement variableElement = variableElementMap.get(context.getQualifiedName());

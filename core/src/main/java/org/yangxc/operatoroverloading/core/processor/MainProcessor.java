@@ -12,15 +12,17 @@ import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
+import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @SupportedAnnotationTypes({MainProcessor.SERVICE_ANNOTATION, MainProcessor.OPERATOR_ANNOTATION})
-@SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions({MainProcessor.OPERATOR_OVERLOADING_LOG})
 public class MainProcessor extends AbstractProcessor {
 
@@ -67,7 +69,7 @@ public class MainProcessor extends AbstractProcessor {
                         .filter(executableElement -> executableElement.getAnnotation(ServiceField.class) != null)
                         .filter(executableElement -> executableElement.getAnnotation(ServiceFunction.class) == null)
                         .map(element -> new FieldHandle(element, rootElement))
-                        .toList();
+                        .collect(Collectors.toList());
                 handle.setServiceFieldHandles(fieldHandles);
                 // ServiceFunction
                 List<FunctionHandle> functionHandles = rootElement.getEnclosedElements()
@@ -78,13 +80,13 @@ public class MainProcessor extends AbstractProcessor {
                         .filter(executableElement -> executableElement.getAnnotation(ServiceField.class) == null)
                         .filter(executableElement -> executableElement.getAnnotation(ServiceFunction.class) != null)
                         .map(FunctionHandle::new)
-                        .toList();
+                        .collect(Collectors.toList());
                 handle.setFunctionContexts(functionHandles);
                 handles.add(handle);
             } catch (ElementException e) {
-                processingEnv.getMessager().printError("init service error: " + e.getMessage(), e.getElement());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init service error: " + e.getMessage(), e.getElement());
             } catch (Exception e) {
-                processingEnv.getMessager().printError("init service error: " + e.getMessage(), rootElement);
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init service error: " + e.getMessage(), rootElement);
             }
         }
         logHandle.postAllInit(handles);
@@ -98,7 +100,8 @@ public class MainProcessor extends AbstractProcessor {
                 if (rootElement.getAnnotation(OperatorClass.class) == null) {
                     continue;
                 }
-                if (rootElement instanceof TypeElement typeElement) {
+                if (rootElement instanceof TypeElement) {
+                    TypeElement typeElement = (TypeElement) rootElement;
                     typeElement.getEnclosedElements()
                             .stream()
                             .filter(element -> element.getKind() == ElementKind.METHOD || element.getKind() == ElementKind.CONSTRUCTOR)
@@ -107,9 +110,9 @@ public class MainProcessor extends AbstractProcessor {
                             .forEach(executableElement -> context.setup(executableElement, typeElement));
                 }
             } catch (ElementException e) {
-                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), e.getElement());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init overloading error: " + e.getMessage(), e.getElement());
             } catch (Exception e) {
-                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), rootElement);
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init overloading error: " + e.getMessage(), rootElement);
             }
         }
         logHandle.postAllOverloading(context);
@@ -123,7 +126,8 @@ public class MainProcessor extends AbstractProcessor {
                 if (rootElement.getAnnotation(OperatorClass.class) == null && rootElement.getAnnotation(OperatorService.class) == null) {
                     continue;
                 }
-                if (rootElement instanceof TypeElement typeElement) {
+                if (rootElement instanceof TypeElement) {
+                    TypeElement typeElement = (TypeElement) rootElement;
                     typeElement.getEnclosedElements()
                             .stream()
                             .filter(element -> element.getKind() == ElementKind.FIELD)
@@ -132,9 +136,9 @@ public class MainProcessor extends AbstractProcessor {
                             .forEach(variableElement -> context.setup(variableElement, typeElement));
                 }
             } catch (ElementException e) {
-                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), e.getElement());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init overloading error: " + e.getMessage(), e.getElement());
             } catch (Exception e) {
-                processingEnv.getMessager().printError("init overloading error: " + e.getMessage(), rootElement);
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init overloading error: " + e.getMessage(), rootElement);
             }
         }
         logHandle.postAllConst(context);
@@ -147,9 +151,9 @@ public class MainProcessor extends AbstractProcessor {
                 handle.setup(overloadingContext, processingEnv.getElementUtils(), variableContexts.copy());
                 logHandle.postSetup(handle);
             } catch (ElementException e) {
-                processingEnv.getMessager().printError("setup error: " + e.getMessage(), e.getElement());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "setup error: " + e.getMessage(), e.getElement());
             } catch (Exception e) {
-                processingEnv.getMessager().printError("setup error: " + e.getMessage(), handle.getTypeElement());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "setup error: " + e.getMessage(), handle.getTypeElement());
             }
         }
     }
@@ -165,9 +169,9 @@ public class MainProcessor extends AbstractProcessor {
             }
             logHandle.postWrite(context, serviceWriterContext);
         } catch (ElementException e) {
-            processingEnv.getMessager().printError("write error: " + e.getMessage(), e.getElement());
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "write error: " + e.getMessage(), e.getElement());
         } catch (Exception e) {
-            processingEnv.getMessager().printError("write error: " + e.getMessage(), context.getTypeElement());
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "write error: " + e.getMessage(), context.getTypeElement());
         }
     }
 

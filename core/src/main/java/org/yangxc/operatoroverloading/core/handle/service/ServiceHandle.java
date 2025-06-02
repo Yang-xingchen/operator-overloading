@@ -56,7 +56,7 @@ public class ServiceHandle {
                         String name = executableElement.getSimpleName().toString();
                         if ("value".equals(name)) {
                             classNameElement = executableElement;
-                            className = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            className = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
                                 @Override
                                 public String visitString(String s, Object object) {
                                     return s;
@@ -64,7 +64,7 @@ public class ServiceHandle {
                             }, null);
                         } else if ("numberType".equals(name)) {
                             numberTypeElement = executableElement;
-                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<NumberType, Object>() {
                                 @Override
                                 public NumberType visitEnumConstant(VariableElement c, Object object) {
                                     return NumberType.valueOf(c.getSimpleName().toString());
@@ -72,7 +72,7 @@ public class ServiceHandle {
                             }, null);
                         } else if ("imports".equals(name)) {
                             importsElement = executableElement;
-                            imports = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            imports = annotationValue.accept(new BaseAnnotationValueVisitor<List<String>, Object>() {
                                 @Override
                                 public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
                                     return vals.stream().map(val -> val.accept(new BaseAnnotationValueVisitor<String, Object>() {
@@ -80,12 +80,12 @@ public class ServiceHandle {
                                         public String visitType(TypeMirror t, Object object) {
                                             return t.toString();
                                         }
-                                    }, null)).toList();
+                                    }, null)).collect(Collectors.toList());
                                 }
                             }, null);
                         } else if ("doc".equals(name)) {
                             docElement = executableElement;
-                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<DocType, Object>() {
                                 @Override
                                 public DocType visitEnumConstant(VariableElement c, Object object) {
                                     return DocType.valueOf(c.getSimpleName().toString());
@@ -101,7 +101,7 @@ public class ServiceHandle {
         className = className != null && className.trim().isEmpty() ? className.trim() : (typeElement.getSimpleName() + "Impl");
         numberType = numberType != null && numberType != NumberType.INHERIT ? numberType : NumberType.BIG_DECIMAL;
         docType = docType != null && docType != DocType.INHERIT ? docType : DocType.DOC;
-        imports = imports != null ? imports : List.of();
+        imports = imports != null ? imports : new ArrayList<>();
     }
 
     public void setServiceFieldHandles(List<FieldHandle> fieldHandles) {
@@ -122,7 +122,7 @@ public class ServiceHandle {
         try {
             if (docType == DocType.DOC || docType == DocType.DOC_EXP) {
                 String docComment = elementUtils.getDocComment(typeElement);
-                docLines = docComment != null ? Arrays.stream(docComment.split("\n")).toList() : null;
+                docLines = docComment != null ? Arrays.stream(docComment.split("\n")).collect(Collectors.toList()) : null;
             }
         } catch (ElementException e) {
             throw e;
@@ -203,11 +203,11 @@ public class ServiceHandle {
                     this.imports.stream()
             ).collect(Collectors.toSet());
             ImportContext importContext = context.handelImport(imports);
-            context.setFieldList(fieldHandles.stream().flatMap(FieldHandle::writeParams).toList());
+            context.setFieldList(fieldHandles.stream().flatMap(FieldHandle::writeParams).collect(Collectors.toList()));
             context.setFunctionWrites(Stream.concat(
                     fieldHandles.stream().map(fieldHandle -> fieldHandle.writeFunction(importContext)).filter(Objects::nonNull),
                     functionHandles.stream().map(functionHandle -> functionHandle.writerContext(importContext))
-            ).toList());
+            ).collect(Collectors.toList()));
             return context;
         } catch (ElementException e) {
             throw e;

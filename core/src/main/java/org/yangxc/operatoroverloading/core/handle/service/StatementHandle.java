@@ -46,7 +46,7 @@ public class StatementHandle {
                 String name = executableElement.getSimpleName().toString();
                 if ("type".equals(name)) {
                     typeElement = executableElement;
-                    type = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                    type = annotationValue.accept(new BaseAnnotationValueVisitor<TypeMirror, Object>() {
                         @Override
                         public TypeMirror visitType(TypeMirror t, Object o) {
                             return t;
@@ -54,7 +54,7 @@ public class StatementHandle {
                     }, null);
                 } else if ("varName".equals(name)) {
                     varNameElement = executableElement;
-                    varName = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                    varName = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
                         @Override
                         public String visitString(String s, Object o) {
                             return s;
@@ -62,7 +62,7 @@ public class StatementHandle {
                     }, null);
                 } else if ("exp".equals(name)) {
                     expElement = executableElement;
-                    exp = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                    exp = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
                         @Override
                         public String visitString(String s, Object o) {
                             return s;
@@ -70,7 +70,7 @@ public class StatementHandle {
                     }, null);
                 } else if ("numberType".equals(name)) {
                     numberTypeElement = executableElement;
-                    numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                    numberType = annotationValue.accept(new BaseAnnotationValueVisitor<NumberType, Object>() {
                         @Override
                         public NumberType visitEnumConstant(VariableElement c, Object object) {
                             return NumberType.valueOf(c.getSimpleName().toString());
@@ -78,7 +78,7 @@ public class StatementHandle {
                     }, null);
                 } else if ("pares".equals(name)) {
                     parseElement = executableElement;
-                    parse = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                    parse = annotationValue.accept(new BaseAnnotationValueVisitor<Boolean, Object>() {
                         @Override
                         public Boolean visitBoolean(boolean b, Object object) {
                             return b;
@@ -93,7 +93,7 @@ public class StatementHandle {
         });
         numberType = numberType != null ? numberType : NumberType.INHERIT;
         parse = parse != null ? parse : true;
-        if (exp == null || exp.isBlank()) {
+        if (exp == null || exp.trim().isEmpty()) {
             throw new ElementException("Statement#exp is blank", expElement);
         }
     }
@@ -192,13 +192,17 @@ public class StatementHandle {
                 return expContext.append(";").toString();
             }
             CastContext cast = result.cast(type);
-            return switch (cast.getType()) {
-                case CAST -> "(" + simpleType + ")" + expContext + ";";
-                case NEW -> "new " + simpleType + "(" + expContext + ");";
-                case METHOD -> expContext.append(".").append(cast.getName()).append("()'").toString();
-                case STATIC_METHOD -> importContext.getSimpleName(cast.getClassName()) + "." + cast.getName() +
+            if (cast.getType() == CastMethodType.CAST) {
+                return "(" + simpleType + ")" + expContext + ";";
+            } else if (cast.getType() == CastMethodType.NEW) {
+                return "new " + simpleType + "(" + expContext + ");";
+            } else if (cast.getType() == CastMethodType.METHOD) {
+                return expContext.append(".").append(cast.getName()).append("()'").toString();
+            } else if (cast.getType() == CastMethodType.STATIC_METHOD) {
+                return importContext.getSimpleName(cast.getClassName()) + "." + cast.getName() +
                         "(" + expContext + ");";
-            };
+            }
+            throw new IllegalArgumentException();
         } catch (ElementException e) {
             throw e;
         } catch (Throwable e) {

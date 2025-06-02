@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SymbolAstPhase implements AstPhase {
 
@@ -28,7 +29,7 @@ public class SymbolAstPhase implements AstPhase {
     public Result handle(List<Ast> tokens, AstPhaseContext context) {
         List<Integer> points = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
-            if (tokens.get(i) instanceof Token t && t.isSymbol()) {
+            if (tokens.get(i) instanceof Token && ((Token) tokens.get(i)).isSymbol()) {
                 points.add(i);
             }
         }
@@ -36,20 +37,20 @@ public class SymbolAstPhase implements AstPhase {
             return new Result(false, tokens);
         }
         Ast[] res = tokens.toArray(new Ast[0]);
-        for (int i = 0; i < points.size(); i++) {
-            int point = points.get(i);
+        for (int point : points) {
             if (res[point] == null) {
                 continue;
             }
-            if (res[point] instanceof Token v) {
+            if (res[point] instanceof Token) {
+                Token v = (Token) res[point];
                 List<Token> typeTokens = new ArrayList<>();
                 typeTokens.add(v);
                 int end = point;
                 while (end + 2 < tokens.size()) {
-                    if (tokens.get(end + 1) == Token.DOT && tokens.get(end + 2) instanceof Token token) {
+                    if (tokens.get(end + 1) == Token.DOT && tokens.get(end + 2) instanceof Token) {
                         res[end + 1] = null;
                         res[end + 2] = null;
-                        typeTokens.add(token);
+                        typeTokens.add((Token) tokens.get(end + 2));
                         end += 2;
                     } else {
                         break;
@@ -58,7 +59,7 @@ public class SymbolAstPhase implements AstPhase {
                 if (typeTokens.size() > 1) {
                     String typeName = typeTokens.stream().limit(typeTokens.size() - 1).map(Token::getValue).collect(Collectors.joining("."));
                     typeName = context.getSymbolContext().getType(typeName);
-                    String name = typeTokens.getLast().getValue();
+                    String name = typeTokens.get(typeTokens.size() - 1).getValue();
                     if (context.getSymbolContext().isVar(typeName, name)) {
                         res[point] = new VariableAst(typeTokens, typeName + "." + name);
                         continue;
@@ -69,15 +70,15 @@ public class SymbolAstPhase implements AstPhase {
                 if (context.getSymbolContext().isVar(v.getValue())) {
                     res[point] = new VariableAst(v);
                 } else if (context.getSymbolContext().isVar("this." + v.getValue())) {
-                    res[point] = new VariableAst(List.of(v), "this." + v.getValue());
+                    res[point] = new VariableAst(Stream.of(v).collect(Collectors.toList()), "this." + v.getValue());
                 } else if (context.getSymbolContext().isType(v.getValue())) {
-                    res[point] = new TypeAst(List.of(v), context.getSymbolContext().getType(v.getValue()));
+                    res[point] = new TypeAst(Stream.of(v).collect(Collectors.toList()), context.getSymbolContext().getType(v.getValue()));
                 } else {
                     throw new IllegalArgumentException("unknown symbol: " + v.getValue());
                 }
             }
         }
-        return new Result(true, Arrays.stream(res).filter(Objects::nonNull).toList());
+        return new Result(true, Arrays.stream(res).filter(Objects::nonNull).collect(Collectors.toList()));
     }
 
 }

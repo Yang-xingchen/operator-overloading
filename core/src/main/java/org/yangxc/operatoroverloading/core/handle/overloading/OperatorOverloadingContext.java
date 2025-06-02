@@ -55,7 +55,7 @@ public final class OperatorOverloadingContext {
         if (obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        var that = (OperatorOverloadingContext) obj;
+        OperatorOverloadingContext that = (OperatorOverloadingContext) obj;
         return Objects.equals(this.operator, that.operator) &&
                 Objects.equals(this.type, that.type) &&
                 Objects.equals(this.name, that.name) &&

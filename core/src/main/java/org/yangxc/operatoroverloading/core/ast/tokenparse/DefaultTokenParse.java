@@ -3,6 +3,7 @@ package org.yangxc.operatoroverloading.core.ast.tokenparse;
 import org.yangxc.operatoroverloading.core.ast.tree.Token;
 import org.yangxc.operatoroverloading.core.exception.ParseException;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -15,16 +16,18 @@ public class DefaultTokenParse implements TokenParse {
     private static final Set<Character> BLACK = Stream.of(
             ' ', '\t', '\n', '\r'
     ).collect(Collectors.toSet());
-    private static final Map<Character, Token> SIGNAL_TOKEN = Map.of(
-            '+', Token.PLUS,
-            '-', Token.SUBTRACT,
-            '*', Token.MULTIPLY,
-            '/', Token.DIVIDE,
-            '%', Token.REMAINDER,
-            '.', Token.DOT,
-            '(', Token.LEFT_PARENTHESIS,
-            ')', Token.RIGHT_PARENTHESIS
-    );
+    private static final Map<Character, Token> SIGNAL_TOKEN;
+    static {
+        SIGNAL_TOKEN = new HashMap<>();
+        SIGNAL_TOKEN.put('+', Token.PLUS);
+        SIGNAL_TOKEN.put('-', Token.SUBTRACT);
+        SIGNAL_TOKEN.put('*', Token.MULTIPLY);
+        SIGNAL_TOKEN.put('/', Token.DIVIDE);
+        SIGNAL_TOKEN.put('%', Token.REMAINDER);
+        SIGNAL_TOKEN.put('.', Token.DOT);
+        SIGNAL_TOKEN.put('(', Token.LEFT_PARENTHESIS);
+        SIGNAL_TOKEN.put(')', Token.RIGHT_PARENTHESIS);
+    }
 
     private boolean lastIsNumber = false;
 
@@ -79,7 +82,7 @@ public class DefaultTokenParse implements TokenParse {
             point++;
         }
         boolean number = Character.isDigit(expression.charAt(point));
-        if (number && !stringBuilder.isEmpty()) {
+        if (number && stringBuilder.length() != 0) {
             throw new ParseException(expression, point);
         }
         while (true) {

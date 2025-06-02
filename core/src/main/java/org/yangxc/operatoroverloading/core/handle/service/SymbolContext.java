@@ -2,6 +2,7 @@ package org.yangxc.operatoroverloading.core.handle.service;
 
 import org.yangxc.operatoroverloading.core.constant.ClassName;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -15,7 +16,7 @@ public class SymbolContext {
     private final Map<String, String> imports;
 
     public SymbolContext() {
-        this(new VariableSetContext(), List.of());
+        this(new VariableSetContext(), new ArrayList<>());
     }
 
     public SymbolContext(VariableSetContext variableContexts, List<String> imports) {

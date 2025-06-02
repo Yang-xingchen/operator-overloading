@@ -29,7 +29,7 @@ public class OverloadingContext {
             boolean isStatic = element.getModifiers().contains(Modifier.STATIC);
             String functionName = element.getSimpleName().toString();
             List<? extends VariableElement> parameters = element.getParameters();
-            String paramType = parameters != null && !parameters.isEmpty() ? parameters.getFirst().asType().toString() : null;
+            String paramType = parameters != null && !parameters.isEmpty() ? parameters.get(0).asType().toString() : null;
             String resultType = element.getReturnType().toString();
 
             setupOperator(element, isStatic, typeName, functionName, paramType, resultType);
@@ -57,7 +57,7 @@ public class OverloadingContext {
                         try {
                             String name = executableElement.getSimpleName().toString();
                             if ("value".equals(name)) {
-                                OperatorType operatorType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                                OperatorType operatorType = annotationValue.accept(new BaseAnnotationValueVisitor<OperatorType, Object>() {
                                     @Override
                                     public OperatorType visitEnumConstant(VariableElement c, Object object) {
                                         return OperatorType.valueOf(c.getSimpleName().toString());

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class AddAstPhase implements AstPhase {
 
@@ -48,7 +49,7 @@ public class AddAstPhase implements AstPhase {
             res[point - 1] = null;
             res[point] = null;
         }
-        return new AstPhase.Result(true, Arrays.stream(res).filter(Objects::nonNull).toList());
+        return new AstPhase.Result(true, Arrays.stream(res).filter(Objects::nonNull).collect(Collectors.toList()));
     }
 
 }

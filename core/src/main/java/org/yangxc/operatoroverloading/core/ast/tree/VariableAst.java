@@ -4,6 +4,8 @@ import org.yangxc.operatoroverloading.core.ast.AstVisitor;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VariableAst implements Ast {
 
@@ -11,7 +13,7 @@ public class VariableAst implements Ast {
     private final String qualifiedName;
 
     public VariableAst(Token var) {
-        this.var = List.of(var);
+        this.var = Stream.of(var).collect(Collectors.toList());
         this.qualifiedName = var.getValue();
     }
 

@@ -8,6 +8,8 @@ import org.yangxc.operatoroverloading.core.handle.service.SymbolContext;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class AstParse {
 
@@ -23,13 +25,13 @@ public class AstParse {
     public static class Build {
 
         private Function<String, TokenParse> parseFactory = DefaultTokenParse::new;
-        private List<AstPhase> phases = List.of(
+        private List<AstPhase> phases = Stream.of(
                 NumberAstPhase.getInstance(),
                 SymbolAstPhase.getInstance(),
                 ParenthesisAstPhase.getInstance(),
                 MultiplyAstPhase.getInstance(),
                 AddAstPhase.getInstance()
-        );
+        ).collect(Collectors.toList());
 
         public Build setParseFactory(Function<String, TokenParse> parseFactory) {
             this.parseFactory = parseFactory;
@@ -56,7 +58,7 @@ public class AstParse {
     }
 
     public Ast parse(TokenParse tokenParse, SymbolContext symbolContext) {
-        List<Ast> tokens = tokenParse.tokens().stream().map(Ast.class::cast).toList();
+        List<Ast> tokens = tokenParse.tokens().stream().map(Ast.class::cast).collect(Collectors.toList());
         AstPhaseContext context = new DefaultAstPhaseContext(symbolContext);
         return doParse(tokens, context);
     }
@@ -68,10 +70,10 @@ public class AstParse {
         for (AstPhase phase : phases) {
             while (true) {
                 AstPhase.Result result = phase.handle(tokens, context);
-                if (!result.handle()) {
+                if (!result.isHandle()) {
                     break;
                 }
-                tokens = result.tokens();
+                tokens = result.getTokens();
             }
         }
         if (tokens.size() != 1) {

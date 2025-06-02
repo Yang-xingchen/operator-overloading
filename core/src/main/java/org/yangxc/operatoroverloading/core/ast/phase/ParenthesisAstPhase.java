@@ -6,6 +6,7 @@ import org.yangxc.operatoroverloading.core.ast.tree.Token;
 import org.yangxc.operatoroverloading.core.ast.tree.TypeAst;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ParenthesisAstPhase implements AstPhase {
 
@@ -42,7 +43,8 @@ public class ParenthesisAstPhase implements AstPhase {
                 // 只有一个token
                 if (end - 2 == i) {
                     res[end] = null;
-                    if (res[i + 1] instanceof TypeAst cast && end + 1 < tokens.size()) {
+                    if (res[i + 1] instanceof TypeAst && end + 1 < tokens.size()) {
+                        TypeAst cast = (TypeAst) res[i + 1];
                         res[i] = new CastAst(cast, res[end + 1]);
                         res[i + 1] = null;
                         res[end + 1] = null;
@@ -64,7 +66,7 @@ public class ParenthesisAstPhase implements AstPhase {
             return new Result(false, tokens);
         }
         if (stack.isEmpty()) {
-            return new Result(true, Arrays.stream(res).filter(Objects::nonNull).toList());
+            return new Result(true, Arrays.stream(res).filter(Objects::nonNull).collect(Collectors.toList()));
         }
         throw new IllegalArgumentException("miss match '('");
     }

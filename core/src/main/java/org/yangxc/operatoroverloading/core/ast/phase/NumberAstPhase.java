@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class NumberAstPhase implements AstPhase {
 
@@ -26,7 +27,7 @@ public class NumberAstPhase implements AstPhase {
     public Result handle(List<Ast> tokens, AstPhaseContext context) {
         List<Integer> points = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
-            if (tokens.get(i) instanceof Token t && t.isDigit()) {
+            if (tokens.get(i) instanceof Token && ((Token) tokens.get(i)).isDigit()) {
                 points.add(i);
             }
         }
@@ -37,7 +38,7 @@ public class NumberAstPhase implements AstPhase {
         for (int point : points) {
             handel(tokens, point, res);
         }
-        return new Result(true, Arrays.stream(res).filter(Objects::nonNull).toList());
+        return new Result(true, Arrays.stream(res).filter(Objects::nonNull).collect(Collectors.toList()));
     }
 
     private boolean isSign(Token s) {

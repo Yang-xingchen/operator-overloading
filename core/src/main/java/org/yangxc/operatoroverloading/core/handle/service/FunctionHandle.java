@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FunctionHandle {
@@ -61,7 +62,7 @@ public class FunctionHandle {
                         String name = executableElement.getSimpleName().toString();
                         if ("value".equals(name)) {
                             expElement = executableElement;
-                            exp = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            exp = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
                                 @Override
                                 public String visitString(String s, Object object) {
                                     return s;
@@ -69,14 +70,14 @@ public class FunctionHandle {
                             }, null);
                         } else if ("statements".equals(name)) {
                             statementsElement = executableElement;
-                            statementHandles = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            statementHandles = annotationValue.accept(new BaseAnnotationValueVisitor<List<StatementHandle>, Object>() {
                                 @Override
                                 public List<StatementHandle> visitArray(List<? extends AnnotationValue> vals, Object o) {
                                     List<StatementHandle> list = new ArrayList<>();
                                     for (int i = 0; i < vals.size(); i++) {
                                         AnnotationValue values = vals.get(i);
                                         int index = i;
-                                        StatementHandle statementHandle = values.accept(new BaseAnnotationValueVisitor<>() {
+                                        StatementHandle statementHandle = values.accept(new BaseAnnotationValueVisitor<StatementHandle, Object>() {
                                             @Override
                                             public StatementHandle visitAnnotation(AnnotationMirror a, Object object) {
                                                 return new StatementHandle(a, index);
@@ -89,7 +90,7 @@ public class FunctionHandle {
                             }, null);
                         } else if ("numberType".equals(name)) {
                             numberTypeElement = executableElement;
-                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<NumberType, Object>() {
                                 @Override
                                 public NumberType visitEnumConstant(VariableElement c, Object object) {
                                     return NumberType.valueOf(c.getSimpleName().toString());
@@ -97,7 +98,7 @@ public class FunctionHandle {
                             }, null);
                         } else if ("doc".equals(name)) {
                             docElement = executableElement;
-                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<DocType, Object>() {
                                 @Override
                                 public DocType visitEnumConstant(VariableElement c, Object object) {
                                     return DocType.valueOf(c.getSimpleName().toString());
@@ -105,7 +106,7 @@ public class FunctionHandle {
                             }, null);
                         } else if ("pares".equals(name)) {
                             parseElement = executableElement;
-                            parse = annotationValue.accept(new BaseAnnotationValueVisitor<>() {
+                            parse = annotationValue.accept(new BaseAnnotationValueVisitor<Boolean, Object>() {
                                 @Override
                                 public Boolean visitBoolean(boolean b, Object object) {
                                     return b;
@@ -118,12 +119,12 @@ public class FunctionHandle {
                         throw new ElementException(e, executableElement);
                     }
                 });
-        if (exp == null || exp.isBlank()) {
+        if (exp == null || exp.trim().isEmpty()) {
             throw new ElementException("ServiceFunction#value is blank", element);
         }
         numberType = numberType != null ? numberType : NumberType.INHERIT;
         docType = docType != null ? docType : DocType.INHERIT;
-        statementHandles = statementHandles != null ? statementHandles : List.of();
+        statementHandles = statementHandles != null ? statementHandles : new ArrayList<>();
         parse = parse != null ? parse : true;
     }
 
@@ -163,7 +164,7 @@ public class FunctionHandle {
                 }
             }
             String docComment = elementUtils.getDocComment(element);
-            List<String> docs = docComment != null ? Arrays.stream(docComment.split("\n")).toList() : null;
+            List<String> docs = docComment != null ? Arrays.stream(docComment.split("\n")).collect(Collectors.toList()) : null;
             if (this.docType == DocType.DOC) {
                 docLines = docs;
                 return;
@@ -297,16 +298,16 @@ public class FunctionHandle {
                 } catch (Throwable e) {
                     throw new ElementException(e, variableElement);
                 }
-            }).toList();
+            }).collect(Collectors.toList());
             write.setParams(params);
-            write.setThrowList(element.getThrownTypes().stream().map(TypeMirror::toString).map(importContext::getSimpleName).toList());
-            List<String> statementLine = statementHandles.stream().map(statementHandle -> statementHandle.write(importContext)).toList();
+            write.setThrowList(element.getThrownTypes().stream().map(TypeMirror::toString).map(importContext::getSimpleName).collect(Collectors.toList()));
+            List<String> statementLine = statementHandles.stream().map(statementHandle -> statementHandle.write(importContext)).collect(Collectors.toList());
             StringBuilder retLine = new StringBuilder();
             if (element.getReturnType().getKind() != TypeKind.VOID) {
                 retLine.append("return ");
             }
             retLine.append(getExpString(ast, importContext, element.getReturnType()));
-            write.setBodyLines(Stream.concat(statementLine.stream(), Stream.of(retLine.toString())).toList());
+            write.setBodyLines(Stream.concat(statementLine.stream(), Stream.of(retLine.toString())).collect(Collectors.toList()));
             return write;
         } catch (ElementException e) {
             throw e;
@@ -327,13 +328,16 @@ public class FunctionHandle {
         }
         CastContext cast = result.cast(type);
         String simpleType = importContext.getSimpleName(type);
-        return switch (cast.getType()) {
-            case CAST -> "(" + simpleType + ")" + expContext + ";";
-            case NEW -> "new " + simpleType + "(" + expContext + ");";
-            case METHOD -> expContext.append(".").append(cast.getName()).append("();").toString();
-            case STATIC_METHOD -> importContext.getSimpleName(cast.getClassName()) + "." + cast.getName() +
-                    "(" + expContext + ");";
-        };
+        if (cast.getType() == CastMethodType.CAST) {
+            return "(" + simpleType + ")" + expContext + ";";
+        } else if (cast.getType() == CastMethodType.NEW) {
+            return "new " + simpleType + "(" + expContext + ");";
+        } else if (cast.getType() == CastMethodType.METHOD) {
+            return expContext.append(".").append(cast.getName()).append("();").toString();
+        } else if (cast.getType() == CastMethodType.STATIC_METHOD) {
+            return importContext.getSimpleName(cast.getClassName()) + "." + cast.getName() + "(" + expContext + ");";
+        }
+        throw new UnsupportedOperationException("unknown CastMethodType: " + cast.getType());
     }
 
 }

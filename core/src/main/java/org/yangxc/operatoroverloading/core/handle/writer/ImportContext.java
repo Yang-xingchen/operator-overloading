@@ -21,7 +21,7 @@ public class ImportContext {
         importMap = new HashMap<>(map.size());
         map.forEach((name, list) -> {
             if (list.size() == 1) {
-                importMap.put(list.getFirst(), name);
+                importMap.put(list.get(0), name);
             } else {
                 list.forEach(n -> importMap.put(n, n));
             }

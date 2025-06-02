@@ -2,9 +2,11 @@ package org.yangxc.operatoroverloading.core.handle.writer;
 
 import org.yangxc.operatoroverloading.core.processor.MainProcessor;
 
+import javax.annotation.Generated;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ServiceWriterContext {
@@ -19,7 +21,7 @@ public class ServiceWriterContext {
     private List<FunctionWriterContext> functionWriterContexts;
 
     public static final String TAB = "    ";
-    private static final String GENERATED = "javax.annotation.processing.Generated";
+    private static final String GENERATED = Generated.class.getTypeName();
 
     public void setPack(String pack) {
         this.pack = pack;
@@ -37,7 +39,7 @@ public class ServiceWriterContext {
     }
 
     public ImportContext handelImport(Collection<String> imports) {
-        importContext = new ImportContext(Stream.concat(imports.stream(), Stream.of(GENERATED)).toList());
+        importContext = new ImportContext(Stream.concat(imports.stream(), Stream.of(GENERATED)).collect(Collectors.toList()));
         return importContext;
     }
 
@@ -69,9 +71,9 @@ public class ServiceWriterContext {
         for (Param field : fieldList) {
             fields.append(TAB)
                     .append("private ")
-                    .append(importContext.getSimpleName(field.type()))
+                    .append(importContext.getSimpleName(field.getType()))
                     .append(" ")
-                    .append(field.name())
+                    .append(field.getName())
                     .append(";\n");
         }
         StringBuilder methods = new StringBuilder();

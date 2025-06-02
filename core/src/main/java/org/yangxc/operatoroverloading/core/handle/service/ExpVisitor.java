@@ -3,13 +3,17 @@ package org.yangxc.operatoroverloading.core.handle.service;
 import org.yangxc.operatoroverloading.core.annotation.NumberType;
 import org.yangxc.operatoroverloading.core.ast.AstVisitor;
 import org.yangxc.operatoroverloading.core.ast.tree.*;
+import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.constant.ClassName;
+import org.yangxc.operatoroverloading.core.constant.OperatorMethodType;
+import org.yangxc.operatoroverloading.core.constant.VariableDefineType;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.ClassOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OperatorOverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.ExpResult> {
@@ -81,11 +85,14 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
     @Override
     public ExpResult visit(VariableAst ast, ExpContext expContext) {
         VariableContext variableContext = expContext.variableContexts.get(ast.qualifiedName());
-        switch (variableContext.getDefineType()) {
-            case PARAM, LOCAL -> expContext.append(variableContext.getName());
-            case THIS -> expContext.append("this.").append(variableContext.getName());
-            case STATIC -> expContext.append(expContext.importContext.getSimpleName(variableContext.getDefineTypeName()))
-                            .append(".").append(variableContext.getName());
+        if (variableContext.getDefineType() == VariableDefineType.PARAM
+                || variableContext.getDefineType() == VariableDefineType.LOCAL) {
+            expContext.append(variableContext.getName());
+        } else if (variableContext.getDefineType() == VariableDefineType.THIS) {
+            expContext.append("this.").append(variableContext.getName());
+        } else if (variableContext.getDefineType() == VariableDefineType.STATIC) {
+            expContext.append(expContext.importContext.getSimpleName(variableContext.getDefineTypeName()))
+                    .append(".").append(variableContext.getName());
         }
         return expContext.createResult(ClassName.unboxedType(variableContext.getType()));
     }
@@ -140,18 +147,21 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
             return expContext.createResult(ast.getSourceType());
         }
         CastContext cast = res.cast(ast.getSourceType());
-        switch (cast.getType()) {
-            case CAST -> expContext.append("(").append(expContext.importContext.getSimpleName(ast.getSourceType())).append(")")
+        if (cast.getType() == CastMethodType.CAST) {
+            expContext.append("(").append(expContext.importContext.getSimpleName(ast.getSourceType())).append(")")
                     .append(subExpContext.toString());
-            case NEW -> expContext.append("new ").append(expContext.importContext.getSimpleName(ast.getSourceType()))
+        } else if (cast.getType() == CastMethodType.NEW) {
+            expContext.append("new ").append(expContext.importContext.getSimpleName(ast.getSourceType()))
                     .append("(").append(subExpContext.toString()).append(")");
-            case METHOD -> expContext.append(subExpContext.toString())
+        } else if (cast.getType() == CastMethodType.METHOD) {
+            expContext.append(subExpContext.toString())
                     .append(".").append(cast.getName()).append("()");
-            case STATIC_METHOD -> {
-                expContext.append(expContext.importContext.getSimpleName(cast.getClassName())).append(".").append(cast.getName())
-                        .append("(").append(subExpContext.toString()).append(")");
-            }
-            default -> throw new UnsupportedOperationException("unknown cast type: " + cast.getType());
+        } else if (cast.getType() == CastMethodType.STATIC_METHOD) {
+            expContext.append(expContext.importContext.getSimpleName(cast.getClassName())).append(".").append(cast.getName())
+                    .append("(").append(subExpContext.toString()).append(")");
+            return expContext.createResult(ast.getSourceType());
+        } else {
+            throw new UnsupportedOperationException("unknown cast type: " + cast.getType());
         }
         return expContext.createResult(ast.getSourceType());
     }
@@ -160,27 +170,24 @@ public class ExpVisitor implements AstVisitor<ExpVisitor.ExpContext, ExpVisitor.
         ExpContext subExpContext = expContext.copy(new StringBuilder());
         ExpResult res = ast.getLeft().accept(this, subExpContext);
         OperatorOverloadingContext overloading = getOverloading.apply(res.overloadingContext);
-        return switch (overloading.getType()) {
-            case PRIMITIVE -> {
-                expContext.append("(").append(subExpContext.toString()).append(overloading.getName());
-                ExpResult rightRes = ast.getRight().accept(this, expContext);
-                expContext.append(")");
-                yield expContext.createResult(ClassName.getPrimitiveType(res.type, rightRes.type));
-            }
-            case METHOD -> {
-                expContext.append(subExpContext.toString()).append(".").append(overloading.getName()).append("(");
-                ast.getRight().accept(this, expContext);
-                expContext.append(")");
-                yield expContext.createResult(overloading.getResultType());
-            }
-            case STATIC_METHOD -> {
-                expContext.append(expContext.importContext.getSimpleName(overloading.getClassName())).append(".").append(overloading.getName());
-                expContext.append("(").append(subExpContext.toString()).append(", ");
-                ast.getRight().accept(this, expContext);
-                expContext.append(")");
-                yield expContext.createResult(overloading.getResultType());
-            }
-        };
+        if (overloading.getType() == OperatorMethodType.PRIMITIVE) {
+            expContext.append("(").append(subExpContext.toString()).append(overloading.getName());
+            ExpResult rightRes = ast.getRight().accept(this, expContext);
+            expContext.append(")");
+            return expContext.createResult(ClassName.getPrimitiveType(res.type, rightRes.type));
+        } else if (overloading.getType() == OperatorMethodType.METHOD) {
+            expContext.append(subExpContext.toString()).append(".").append(overloading.getName()).append("(");
+            ast.getRight().accept(this, expContext);
+            expContext.append(")");
+            return expContext.createResult(overloading.getResultType());
+        } else if (overloading.getType() == OperatorMethodType.STATIC_METHOD) {
+            expContext.append(expContext.importContext.getSimpleName(overloading.getClassName())).append(".").append(overloading.getName());
+            expContext.append("(").append(subExpContext.toString()).append(", ");
+            ast.getRight().accept(this, expContext);
+            expContext.append(")");
+            return expContext.createResult(overloading.getResultType());
+        }
+        throw new UnsupportedOperationException("unknown OperatorMethodType: " + overloading.getType());
     }
 
     @Override

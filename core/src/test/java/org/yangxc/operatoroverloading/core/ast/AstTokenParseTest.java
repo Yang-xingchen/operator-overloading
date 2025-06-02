@@ -10,6 +10,7 @@ import org.yangxc.operatoroverloading.core.handle.service.SymbolContext;
 import org.yangxc.operatoroverloading.core.handle.service.VariableContext;
 import org.yangxc.operatoroverloading.core.handle.service.VariableSetContext;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -90,8 +91,8 @@ class AstTokenParseTest {
         Assertions.assertEquals("(1+(-2.3))", astParse.parse("1+(-2.3)").toString(), "1+(-2.3)");
         Assertions.assertEquals("(1-2.3)", astParse.parse("1-2.3").toString(), "1-2.3");
 
-        Assertions.assertEquals("(a+b)", astParse.parse("a+b", new SymbolContext(getVarContext("a", "b"), List.of())).toString(), "a+b");
-        Assertions.assertEquals("((aa+b1)+1)", astParse.parse("aa+b1+1", new SymbolContext(getVarContext("aa", "b1"), List.of())).toString(), "aa+b1+1");
+        Assertions.assertEquals("(a+b)", astParse.parse("a+b", new SymbolContext(getVarContext("a", "b"), new ArrayList<>())).toString(), "a+b");
+        Assertions.assertEquals("((aa+b1)+1)", astParse.parse("aa+b1+1", new SymbolContext(getVarContext("aa", "b1"), new ArrayList<>())).toString(), "aa+b1+1");
 
         Assertions.assertEquals("(1+(2*3))", astParse.parse("1+2*3").toString(), "1+2*3");
         Assertions.assertEquals("((1*2)-(3/4))", astParse.parse("1*2-3/4").toString(), "1*2-3/4");

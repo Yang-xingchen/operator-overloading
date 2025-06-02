@@ -48,7 +48,7 @@ public final class CastContext {
         if (obj == null || obj.getClass() != this.getClass()) {
             return false;
         }
-        var that = (CastContext) obj;
+        CastContext that = (CastContext) obj;
         return Objects.equals(this.from, that.from) &&
                 Objects.equals(this.type, that.type) &&
                 Objects.equals(this.className, that.className) &&
