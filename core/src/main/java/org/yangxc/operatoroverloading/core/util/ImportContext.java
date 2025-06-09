@@ -1,4 +1,4 @@
-package org.yangxc.operatoroverloading.core.handle.writer;
+package org.yangxc.operatoroverloading.core.util;
 
 import org.yangxc.operatoroverloading.core.constant.ClassName;
 
@@ -35,7 +35,7 @@ public class ImportContext {
         return importMap.getOrDefault(qualifiedName, qualifiedName);
     }
 
-    String write() {
+    public String write() {
         return this.importMap
                 .keySet()
                 .stream()

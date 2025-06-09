@@ -21,31 +21,38 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.yangxc.operatoroverloading.core.processor.LogHandle.OPERATOR_OVERLOADING_LOG;
+import static org.yangxc.operatoroverloading.core.processor.SpringBootHandle.SPRING_BOOT_TYPE;
+
 @SupportedAnnotationTypes({MainProcessor.SERVICE_ANNOTATION, MainProcessor.OPERATOR_ANNOTATION})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
-@SupportedOptions({MainProcessor.OPERATOR_OVERLOADING_LOG})
+@SupportedOptions({OPERATOR_OVERLOADING_LOG})
 public class MainProcessor extends AbstractProcessor {
 
-    private LogHandle logHandle;
+    private List<ProcessorHandle> handles;
 
     public static final String SERVICE_ANNOTATION = "org.yangxc.operatoroverloading.core.annotation.OperatorService";
     public static final String OPERATOR_ANNOTATION = "org.yangxc.operatoroverloading.core.annotation.OperatorClass";
 
-    public static final String OPERATOR_OVERLOADING_LOG = "OperatorOverloadingLog";
-
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
-        logHandle = new LogHandle(processingEnv.getMessager(), processingEnv.getOptions().get(OPERATOR_OVERLOADING_LOG));
+        handles = new ArrayList<>();
+        handles.add(new LogHandle(processingEnv.getMessager(), processingEnv.getOptions().get(OPERATOR_OVERLOADING_LOG)));
+        handles.add(new SpringBootHandle(processingEnv, processingEnv.getOptions().get(SPRING_BOOT_TYPE)));
     }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        handles.forEach(ph -> ph.startRound(annotations, roundEnv));
         List<ServiceHandle> serviceHandles = getService(roundEnv);
         OverloadingContext overloadingContext = getOverloading(roundEnv);
         VariableSetContext variableContexts = getConst(roundEnv);
+        handles.forEach(ph -> ph.preAllSetup(serviceHandles, overloadingContext, variableContexts));
         setup(serviceHandles, overloadingContext, variableContexts);
+        handles.forEach(ph -> ph.postAllSetup(serviceHandles, overloadingContext, variableContexts));
         serviceHandles.forEach(this::write);
+        handles.forEach(ph -> ph.postAllWrite(serviceHandles, overloadingContext, variableContexts));
         return !serviceHandles.isEmpty();
     }
 
@@ -89,7 +96,7 @@ public class MainProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init service error: " + e.getMessage(), rootElement);
             }
         }
-        logHandle.postAllInit(handles);
+        MainProcessor.this.handles.forEach(ph -> ph.postAllInit(handles));
         return handles;
     }
 
@@ -115,7 +122,7 @@ public class MainProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init overloading error: " + e.getMessage(), rootElement);
             }
         }
-        logHandle.postAllOverloading(context);
+        handles.forEach(ph -> ph.postAllOverloading(context));
         return context;
     }
 
@@ -141,7 +148,7 @@ public class MainProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "init overloading error: " + e.getMessage(), rootElement);
             }
         }
-        logHandle.postAllConst(context);
+        handles.forEach(ph -> ph.postAllConst(context));
         return context;
     }
 
@@ -149,7 +156,7 @@ public class MainProcessor extends AbstractProcessor {
         for (ServiceHandle handle : handles) {
             try {
                 handle.setup(overloadingContext, processingEnv.getElementUtils(), variableContexts.copy());
-                logHandle.postSetup(handle);
+                MainProcessor.this.handles.forEach(ph -> ph.postSetup(handle));
             } catch (ElementException e) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "setup error: " + e.getMessage(), e.getElement());
             } catch (Exception e) {
@@ -161,13 +168,13 @@ public class MainProcessor extends AbstractProcessor {
     private void write(ServiceHandle context) {
         try {
             ServiceWriterContext serviceWriterContext = context.writerContext();
-            logHandle.preWrite(context, serviceWriterContext);
+            handles.forEach(ph -> ph.preWrite(context, serviceWriterContext));
             JavaFileObject sourceFile = processingEnv.getFiler().createSourceFile(context.getQualifiedName());
             try (OutputStream outputStream = sourceFile.openOutputStream();
                  OutputStreamWriter writer = new OutputStreamWriter(outputStream)) {
                 writer.write(serviceWriterContext.code());
             }
-            logHandle.postWrite(context, serviceWriterContext);
+            handles.forEach(ph -> ph.postWrite(context, serviceWriterContext));
         } catch (ElementException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "write error: " + e.getMessage(), e.getElement());
         } catch (Exception e) {

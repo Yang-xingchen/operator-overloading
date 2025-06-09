@@ -6,7 +6,7 @@ import org.yangxc.operatoroverloading.core.annotation.OperatorService;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
-import org.yangxc.operatoroverloading.core.handle.writer.ImportContext;
+import org.yangxc.operatoroverloading.core.util.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
 import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
@@ -158,7 +158,7 @@ public class ServiceHandle {
         return typeElement;
     }
 
-    private String getPackage() {
+    public String getPackage() {
         String qualifiedName = typeElement.getQualifiedName().toString();
         int i = qualifiedName.lastIndexOf('.');
         if (i == -1) {
@@ -167,7 +167,7 @@ public class ServiceHandle {
         return qualifiedName.substring(0, i);
     }
 
-    private String getClassName() {
+    public String getClassName() {
         return className;
     }
 
