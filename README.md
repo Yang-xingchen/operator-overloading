@@ -22,7 +22,9 @@
    2. 必须添加`annotation.org.yangxc.operatoroverloading.core.OperatorService`注解，具体参数见注释[OperatorService.java](core/src/main/java/org/yangxc/core/annotation/OperatorService.java)
    3. 定义方法, 添加`annotation.org.yangxc.operatoroverloading.core.ServiceFunction`注解，具体参数见注释[ServiceFunction.java](core/src/main/java/org/yangxc/operatoroverloading/core/annotation/ServiceFunction.java)
    4. _无需实现类_
-3. 获取实现: `org.yangxc.operatoroverloading.core.Overloading.get(BaseService.class)`
+3. 获取实现
+  - SpringBoot: 无需额外操作，自动添加配置类，注册为Spring单例bean [MainApplication.java](example/springboot/src/main/java/org/yangxc/operatoroverloading/example/MainApplication.java)
+  - 非SpringBoot: `org.yangxc.operatoroverloading.core.Overloading.get(BaseService.class)` [Main.java](example/base/src/main/java/org/yangxc/operatoroverloading/example/Main.java)
 
 ## Example1 & Explain
 > 该示例仅作为展示内置的运算功能，如果你仔细分析，会发现无论参数如何该示例返回结果总是相同的，但作为示例已经足够
@@ -179,14 +181,59 @@ public class Complex {                                  // 2
 > [!TIP]
 > 为避免非预期情况发生，操作数的类型及返回类型建议都相同。
 
+## Example3 & Explain
+> 该示例展示SpringBoot环境使用
+
+定义:
+```java
+import org.yangxc.operatoroverloading.core.annotation.spring.Scope;         // 1
+// 省略其他导入
+
+@Scope("prototype")                                                         // 2
+@OperatorService
+public interface TestService {
+    // 省略方法
+}
+```
+
+使用:
+```java
+TestService testService = applicationContext.getBean(TestService.class);    // 3
+```
+
+- 在`1`处导入`Scope`，**注意引入的为本框架的注解**
+- 在`2`处使用注解，内容同Spring的`@Scope`注解
+- 在`3`处使用，使用方法同使用Spring bean(包括自动注入、AOP等功能，理论上与使用其他Spring bean没有区别)
+
+> [!TIP]
+> 若不添加`Scope`注解或未配置内容，默认生成的配置中也不添加`Scope`
+
+> [!IMPORTANT]
+> 框架通过查找包含`@SpringBootApplication`注解判断是否注入Spring。
+> 若无主类(如提供给其他程序的框架)，请添加`-AOperatorOverloadingSpringBootConfigName`参数(该参数配置`@SpringBootConfiguration`注解配置类的全限定类名)
+
+该示例编译后生成的代码如下(省略`TestService`生成实现类):
+```java
+@SpringBootConfiguration
+public class OperatorOverloadingConfiguration {
+
+    @Bean
+    @Scope("prototype")
+    public TestService testService() {
+        return new TestServiceImpl();
+    }
+    
+}
+```
+
 # TODO LIST
 > - _斜体_ 为未计划，不一定会实现
 > - ~~删除线~~ 为暂未找到解决方案
 
-- [ ] 支持将科学计数法转成普通数值
-- [ ] 自动化导入(消除`spi`使用)
-- [ ] 支持条件分支
 - [ ] 文档
+- [ ] 支持条件分支
+- [ ] 自动化导入(消除`spi`使用)
+- [ ] _支持将科学计数法转成普通数值_
 - [ ] _支持自定义操作符_
 - [ ] _支持十六进制、八进制、二进制及转成十进制_
 - [ ] _支持泛型_

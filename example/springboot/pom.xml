@@ -39,6 +39,7 @@
                 <configuration>
                     <compilerArgs>
                         <arg>-AOperatorOverloadingLog=debug</arg>
+                        <arg>-AOperatorOverloadingSpringBootConfigName=org.yangxc.operatoroverloading.example.Config</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

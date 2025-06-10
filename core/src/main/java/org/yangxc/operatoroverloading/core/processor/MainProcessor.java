@@ -19,17 +19,30 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.yangxc.operatoroverloading.core.processor.LogHandle.OPERATOR_OVERLOADING_LOG;
-import static org.yangxc.operatoroverloading.core.processor.SpringBootHandle.SPRING_BOOT_TYPE;
+import static org.yangxc.operatoroverloading.core.processor.SpringBootHandle.*;
 
 @SupportedAnnotationTypes({MainProcessor.SERVICE_ANNOTATION, MainProcessor.OPERATOR_ANNOTATION})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
-@SupportedOptions({OPERATOR_OVERLOADING_LOG})
+@SupportedOptions({
+        OPERATOR_OVERLOADING_LOG,
+        SPRING_BOOT_TYPE,
+        SPRING_BOOT_CONFIG_NAME
+})
 public class MainProcessor extends AbstractProcessor {
 
     private List<ProcessorHandle> handles;
+    static final List<String> HELPS;
+    static {
+        HELPS = Stream.of(
+                LogHandle.helps(),
+                SpringBootHandle.helps()
+        ).flatMap(Function.identity()).collect(Collectors.toList());
+    }
 
     public static final String SERVICE_ANNOTATION = "org.yangxc.operatoroverloading.core.annotation.OperatorService";
     public static final String OPERATOR_ANNOTATION = "org.yangxc.operatoroverloading.core.annotation.OperatorClass";
@@ -39,7 +52,10 @@ public class MainProcessor extends AbstractProcessor {
         super.init(processingEnv);
         handles = new ArrayList<>();
         handles.add(new LogHandle(processingEnv.getMessager(), processingEnv.getOptions().get(OPERATOR_OVERLOADING_LOG)));
-        handles.add(new SpringBootHandle(processingEnv, processingEnv.getOptions().get(SPRING_BOOT_TYPE)));
+        handles.add(new SpringBootHandle(processingEnv,
+                processingEnv.getOptions().get(SPRING_BOOT_TYPE),
+                processingEnv.getOptions().get(SPRING_BOOT_CONFIG_NAME)
+        ));
     }
 
     @Override

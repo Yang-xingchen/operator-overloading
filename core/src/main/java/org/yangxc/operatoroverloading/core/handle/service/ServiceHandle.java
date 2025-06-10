@@ -6,14 +6,12 @@ import org.yangxc.operatoroverloading.core.annotation.OperatorService;
 import org.yangxc.operatoroverloading.core.ast.AstParse;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
-import org.yangxc.operatoroverloading.core.util.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.ServiceWriterContext;
-import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.GetAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.ImportContext;
 
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import java.util.*;
@@ -56,41 +54,16 @@ public class ServiceHandle {
                         String name = executableElement.getSimpleName().toString();
                         if ("value".equals(name)) {
                             classNameElement = executableElement;
-                            className = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                                @Override
-                                public String visitString(String s, Object object) {
-                                    return s;
-                                }
-                            }, null);
+                            className = annotationValue.accept(GetAnnotationValueVisitor.visitString(), null);
                         } else if ("numberType".equals(name)) {
                             numberTypeElement = executableElement;
-                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<NumberType, Object>() {
-                                @Override
-                                public NumberType visitEnumConstant(VariableElement c, Object object) {
-                                    return NumberType.valueOf(c.getSimpleName().toString());
-                                }
-                            }, null);
+                            numberType = annotationValue.accept(GetAnnotationValueVisitor.visitEnum(NumberType.class), null);
                         } else if ("imports".equals(name)) {
                             importsElement = executableElement;
-                            imports = annotationValue.accept(new BaseAnnotationValueVisitor<List<String>, Object>() {
-                                @Override
-                                public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
-                                    return vals.stream().map(val -> val.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                                        @Override
-                                        public String visitType(TypeMirror t, Object object) {
-                                            return t.toString();
-                                        }
-                                    }, null)).collect(Collectors.toList());
-                                }
-                            }, null);
+                            imports = annotationValue.accept(GetAnnotationValueVisitor.visitArrayEach(GetAnnotationValueVisitor.visitType(TypeMirror::toString)), null);
                         } else if ("doc".equals(name)) {
                             docElement = executableElement;
-                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<DocType, Object>() {
-                                @Override
-                                public DocType visitEnumConstant(VariableElement c, Object object) {
-                                    return DocType.valueOf(c.getSimpleName().toString());
-                                }
-                            }, null);
+                            docType = annotationValue.accept(GetAnnotationValueVisitor.visitEnum(DocType.class), null);
                         }
                     } catch (ElementException e) {
                         throw e;
@@ -98,7 +71,7 @@ public class ServiceHandle {
                         throw new ElementException(e, executableElement);
                     }
                 });
-        className = className != null && className.trim().isEmpty() ? className.trim() : (typeElement.getSimpleName() + "Impl");
+        className = className != null && !className.trim().isEmpty() ? className.trim() : (typeElement.getSimpleName() + "Impl");
         numberType = numberType != null && numberType != NumberType.INHERIT ? numberType : NumberType.BIG_DECIMAL;
         docType = docType != null && docType != DocType.INHERIT ? docType : DocType.DOC;
         imports = imports != null ? imports : new ArrayList<>();
@@ -167,7 +140,11 @@ public class ServiceHandle {
         return qualifiedName.substring(0, i);
     }
 
-    public String getClassName() {
+    public String getInterfaceName() {
+        return typeElement.getSimpleName().toString();
+    }
+
+    public String getImplClassName() {
         return className;
     }
 
@@ -186,9 +163,9 @@ public class ServiceHandle {
     public String getQualifiedName() {
         String aPackage = getPackage();
         if (aPackage == null) {
-            return getClassName();
+            return getImplClassName();
         }
-        return aPackage + "." + getClassName();
+        return aPackage + "." + getImplClassName();
     }
 
     public ServiceWriterContext writerContext() {
@@ -196,8 +173,8 @@ public class ServiceHandle {
             ServiceWriterContext context = new ServiceWriterContext();
             context.setDocLines(docLines);
             context.setPack(getPackage());
-            context.setClassName(getClassName());
-            context.setInterfaceName(typeElement.getSimpleName().toString());
+            context.setClassName(getImplClassName());
+            context.setInterfaceName(getInterfaceName());
             Set<String> imports = Stream.concat(
                     functionHandles.stream().flatMap(FunctionHandle::getUseClasses),
                     this.imports.stream()

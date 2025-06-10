@@ -3,11 +3,10 @@ package org.yangxc.operatoroverloading.core.handle.service;
 import org.yangxc.operatoroverloading.core.annotation.ServiceField;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.writer.FunctionWriterContext;
-import org.yangxc.operatoroverloading.core.util.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.Param;
-import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.GetAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.ImportContext;
 
-import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
@@ -51,17 +50,7 @@ public class FieldHandle {
                         String name = executableElement.getSimpleName().toString();
                         if ("value".equals(name)) {
                             namesElement = executableElement;
-                            names = annotationValue.accept(new BaseAnnotationValueVisitor<List<String>, Object>() {
-                                @Override
-                                public List<String> visitArray(List<? extends AnnotationValue> vals, Object object) {
-                                    return vals.stream().map(v -> v.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                                        @Override
-                                        public String visitString(String s, Object object) {
-                                            return s;
-                                        }
-                                    }, null)).collect(Collectors.toList());
-                                }
-                            }, null);
+                            names = annotationValue.accept(GetAnnotationValueVisitor.visitArrayEach(GetAnnotationValueVisitor.visitString()), null);
                         }
                     } catch (ElementException e) {
                         throw e;

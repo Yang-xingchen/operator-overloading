@@ -7,7 +7,7 @@ import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.constant.ClassOverloading;
 import org.yangxc.operatoroverloading.core.constant.OperatorMethodType;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
-import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.GetAnnotationValueVisitor;
 
 import javax.lang.model.element.*;
 import java.util.HashMap;
@@ -57,12 +57,7 @@ public class OverloadingContext {
                         try {
                             String name = executableElement.getSimpleName().toString();
                             if ("value".equals(name)) {
-                                OperatorType operatorType = annotationValue.accept(new BaseAnnotationValueVisitor<OperatorType, Object>() {
-                                    @Override
-                                    public OperatorType visitEnumConstant(VariableElement c, Object object) {
-                                        return OperatorType.valueOf(c.getSimpleName().toString());
-                                    }
-                                }, null);
+                                OperatorType operatorType = annotationValue.accept(GetAnnotationValueVisitor.visitEnum(OperatorType.class), null);
                                 if (isStatic) {
                                     put(new OperatorOverloadingContext(operatorType, OperatorMethodType.STATIC_METHOD, typeName, functionName, paramType, resultType));
                                 } else {

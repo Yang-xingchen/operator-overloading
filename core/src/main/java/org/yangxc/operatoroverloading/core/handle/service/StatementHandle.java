@@ -7,12 +7,11 @@ import org.yangxc.operatoroverloading.core.constant.CastMethodType;
 import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
+import org.yangxc.operatoroverloading.core.util.GetAnnotationValueVisitor;
 import org.yangxc.operatoroverloading.core.util.ImportContext;
-import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.util.List;
@@ -46,44 +45,19 @@ public class StatementHandle {
                 String name = executableElement.getSimpleName().toString();
                 if ("type".equals(name)) {
                     typeElement = executableElement;
-                    type = annotationValue.accept(new BaseAnnotationValueVisitor<TypeMirror, Object>() {
-                        @Override
-                        public TypeMirror visitType(TypeMirror t, Object o) {
-                            return t;
-                        }
-                    }, null);
+                    type = annotationValue.accept(GetAnnotationValueVisitor.visitType(), null);
                 } else if ("varName".equals(name)) {
                     varNameElement = executableElement;
-                    varName = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                        @Override
-                        public String visitString(String s, Object o) {
-                            return s;
-                        }
-                    }, null);
+                    varName = annotationValue.accept(GetAnnotationValueVisitor.visitString(), null);
                 } else if ("exp".equals(name)) {
                     expElement = executableElement;
-                    exp = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                        @Override
-                        public String visitString(String s, Object o) {
-                            return s;
-                        }
-                    }, null);
+                    exp = annotationValue.accept(GetAnnotationValueVisitor.visitString(), null);
                 } else if ("numberType".equals(name)) {
                     numberTypeElement = executableElement;
-                    numberType = annotationValue.accept(new BaseAnnotationValueVisitor<NumberType, Object>() {
-                        @Override
-                        public NumberType visitEnumConstant(VariableElement c, Object object) {
-                            return NumberType.valueOf(c.getSimpleName().toString());
-                        }
-                    }, null);
+                    numberType = annotationValue.accept(GetAnnotationValueVisitor.visitEnum(NumberType.class), null);
                 } else if ("pares".equals(name)) {
                     parseElement = executableElement;
-                    parse = annotationValue.accept(new BaseAnnotationValueVisitor<Boolean, Object>() {
-                        @Override
-                        public Boolean visitBoolean(boolean b, Object object) {
-                            return b;
-                        }
-                    }, null);
+                    parse = annotationValue.accept(GetAnnotationValueVisitor.visitBoolean(), null);
                 }
             } catch (ElementException e) {
                 throw e;

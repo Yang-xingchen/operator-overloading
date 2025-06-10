@@ -16,19 +16,26 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.yangxc.operatoroverloading.core.processor.SpringBootHandle.SPRING_BOOT_TYPE;
-
 public class LogHandle implements ProcessorHandle {
 
     public static final String OPERATOR_OVERLOADING_LOG = "OperatorOverloadingLog";
-    private static final String NONE = "none";
-    private static final String DEBUG = "debug";
-    private static final String INFO = "info";
+    static final String NONE = "none";
+    static final String DEBUG = "debug";
+    static final String INFO = "info";
 
     private static Messager messager;
     private final String level;
+    private boolean handle = false;
 
     private static String gobleLevel = INFO;
+
+    static Stream<String> helps() {
+        return Stream.of(
+                "使用 -A" + OPERATOR_OVERLOADING_LOG + "=none 仅显示错误信息",
+                "使用 -A" + OPERATOR_OVERLOADING_LOG + "=info 显示基本信息",
+                "使用 -A" + OPERATOR_OVERLOADING_LOG + "=debug 显示详细信息"
+        );
+    }
 
     public LogHandle(Messager messager, String level) {
         LogHandle.messager = messager;
@@ -46,19 +53,21 @@ public class LogHandle implements ProcessorHandle {
         if (NONE.equals(level)) {
             return;
         }
-        messager.printMessage(Diagnostic.Kind.NOTE, "------------------------[ OperatorOverloading ]------------------------");
-        messager.printMessage(Diagnostic.Kind.NOTE, "issues反馈: https://github.com/Yang-xingchen/operator-overloading/issues");
-        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + OPERATOR_OVERLOADING_LOG + "=none 仅显示错误信息");
-        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + OPERATOR_OVERLOADING_LOG + "=info 显示基本信息");
-        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + OPERATOR_OVERLOADING_LOG + "=debug 显示详细信息");
-        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + SPRING_BOOT_TYPE + "=auto 自动判断");
-        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + SPRING_BOOT_TYPE + "=none 不使用spring自动注入");
-        messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + SPRING_BOOT_TYPE + "=config 使用@Configuration注解");
+        messager.printMessage(Diagnostic.Kind.NOTE, "------------------------[ OperatorOverloading ]-------------------------");
+        if (DEBUG.equals(level)) {
+            messager.printMessage(Diagnostic.Kind.NOTE, "issues反馈: https://github.com/Yang-xingchen/operator-overloading/issues");
+            MainProcessor.HELPS.forEach(help -> messager.printMessage(Diagnostic.Kind.NOTE, help));
+        } else if (INFO.equals(level)) {
+            messager.printMessage(Diagnostic.Kind.NOTE, "使用 -A" + OPERATOR_OVERLOADING_LOG + "=debug 显示详细信息及可用参数");
+        }
         messager.printMessage(Diagnostic.Kind.NOTE, "");
     }
 
     @Override
     public void postAllInit(List<ServiceHandle> handles) {
+        if (handle) {
+            return;
+        }
         if (DEBUG.equals(level) || INFO.equals(level)) {
             messager.printMessage(Diagnostic.Kind.NOTE, "load services: " + handles.stream().map(ServiceHandle::getTypeElement).map(TypeElement::getQualifiedName).map(Object::toString).collect(Collectors.toList()));
         }
@@ -66,6 +75,9 @@ public class LogHandle implements ProcessorHandle {
 
     @Override
     public void postAllOverloading(OverloadingContext context) {
+        if (handle) {
+            return;
+        }
         if (DEBUG.equals(level)) {
             Set<String> msgSet = context.typeSet()
                     .stream()
@@ -82,15 +94,21 @@ public class LogHandle implements ProcessorHandle {
 
     @Override
     public void postAllConst(VariableSetContext context) {
+        if (handle) {
+            return;
+        }
         if (DEBUG.equals(level)) {
             messager.printMessage(Diagnostic.Kind.NOTE, "load const: " + context.values());
         } else {
-            messager.printMessage(Diagnostic.Kind.NOTE, "load const: " + context.values().stream().collect(Collectors.groupingBy(VariableContext::getDefineTypeName, Collectors.counting())));
+            messager.printMessage(Diagnostic.Kind.NOTE, "load const count: " + context.values().stream().collect(Collectors.groupingBy(VariableContext::getDefineTypeName, Collectors.counting())));
         }
     }
 
     @Override
     public void postSetup(ServiceHandle handle) {
+        if (this.handle) {
+            return;
+        }
         if (DEBUG.equals(level)) {
             StringBuilder msg = new StringBuilder("setup service: {")
                     .append("\"qualifiedName\": \"").append(handle.getQualifiedName()).append("\", ")
@@ -101,8 +119,16 @@ public class LogHandle implements ProcessorHandle {
                     .collect(Collectors.joining(","));
             msg.append("\"function\": [").append(function).append("]}");
             messager.printMessage(Diagnostic.Kind.NOTE, msg.toString(), handle.getTypeElement());
-        } else if (INFO.equals(level)) {
-            messager.printMessage(Diagnostic.Kind.NOTE, "setup service", handle.getTypeElement());
+        }
+    }
+
+    @Override
+    public void postAllSetup(List<ServiceHandle> serviceHandles, OverloadingContext overloadingContext, VariableSetContext variableSetContext) {
+        if (this.handle) {
+            return;
+        }
+        if (INFO.equals(level)) {
+            messager.printMessage(Diagnostic.Kind.NOTE, "setup service complete");
         }
     }
 
@@ -117,19 +143,30 @@ public class LogHandle implements ProcessorHandle {
 
     @Override
     public void preWrite(ServiceHandle handle, ServiceWriterContext serviceWriterContext) {
+        if (this.handle) {
+            return;
+        }
         if (DEBUG.equals(level)) {
             messager.printMessage(Diagnostic.Kind.NOTE, "write code: \n" + serviceWriterContext.code(), handle.getTypeElement());
         }
     }
 
     @Override
-    public void postWrite(ServiceHandle handle, ServiceWriterContext serviceWriterContext) {
-        if (INFO.equals(level)) {
-            messager.printMessage(Diagnostic.Kind.NOTE, "write complete", handle.getTypeElement());
+    public void postAllWrite(List<ServiceHandle> serviceHandles, OverloadingContext overloadingContext, VariableSetContext variableSetContext) {
+        if (this.handle) {
+            return;
         }
+        if (INFO.equals(level)) {
+            messager.printMessage(Diagnostic.Kind.NOTE, "write service complete");
+        }
+        handle = true;
     }
 
-    public static void print(Diagnostic.Kind kind, String msg) {
+    public static String getGobleLevel() {
+        return gobleLevel;
+    }
+
+    public static void debug(Diagnostic.Kind kind, String msg) {
         if (DEBUG.equals(gobleLevel)) {
             messager.printMessage(kind, msg);
         } else if (INFO.equals(gobleLevel)) {
@@ -143,13 +180,33 @@ public class LogHandle implements ProcessorHandle {
         }
     }
 
-    public static void print(Diagnostic.Kind kind, String msg, Element element) {
+    public static void debug(Diagnostic.Kind kind, String msg, Element element) {
         if (DEBUG.equals(gobleLevel)) {
             messager.printMessage(kind, msg, element);
         } else if (INFO.equals(gobleLevel)) {
             if (kind != Diagnostic.Kind.NOTE) {
                 messager.printMessage(kind, msg, element);
             }
+        } else if (NONE.equals(gobleLevel)) {
+            if (kind == Diagnostic.Kind.ERROR) {
+                messager.printMessage(kind, msg, element);
+            }
+        }
+    }
+
+    public static void info(Diagnostic.Kind kind, String msg) {
+        if (DEBUG.equals(gobleLevel) || INFO.equals(getGobleLevel())) {
+            messager.printMessage(kind, msg);
+        } else {
+            if (kind == Diagnostic.Kind.ERROR) {
+                messager.printMessage(kind, msg);
+            }
+        }
+    }
+
+    public static void info(Diagnostic.Kind kind, String msg, Element element) {
+        if (DEBUG.equals(gobleLevel) || INFO.equals(getGobleLevel())) {
+            messager.printMessage(kind, msg, element);
         } else if (NONE.equals(gobleLevel)) {
             if (kind == Diagnostic.Kind.ERROR) {
                 messager.printMessage(kind, msg, element);

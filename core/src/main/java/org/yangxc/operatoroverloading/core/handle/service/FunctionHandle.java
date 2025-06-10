@@ -10,11 +10,10 @@ import org.yangxc.operatoroverloading.core.exception.ElementException;
 import org.yangxc.operatoroverloading.core.handle.overloading.CastContext;
 import org.yangxc.operatoroverloading.core.handle.overloading.OverloadingContext;
 import org.yangxc.operatoroverloading.core.handle.writer.FunctionWriterContext;
-import org.yangxc.operatoroverloading.core.util.ImportContext;
 import org.yangxc.operatoroverloading.core.handle.writer.Param;
-import org.yangxc.operatoroverloading.core.util.BaseAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.GetAnnotationValueVisitor;
+import org.yangxc.operatoroverloading.core.util.ImportContext;
 
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
@@ -62,56 +61,28 @@ public class FunctionHandle {
                         String name = executableElement.getSimpleName().toString();
                         if ("value".equals(name)) {
                             expElement = executableElement;
-                            exp = annotationValue.accept(new BaseAnnotationValueVisitor<String, Object>() {
-                                @Override
-                                public String visitString(String s, Object object) {
-                                    return s;
-                                }
-                            }, null);
+                            exp = annotationValue.accept(GetAnnotationValueVisitor.visitString(), null);
                         } else if ("statements".equals(name)) {
                             statementsElement = executableElement;
-                            statementHandles = annotationValue.accept(new BaseAnnotationValueVisitor<List<StatementHandle>, Object>() {
-                                @Override
-                                public List<StatementHandle> visitArray(List<? extends AnnotationValue> vals, Object o) {
-                                    List<StatementHandle> list = new ArrayList<>();
-                                    for (int i = 0; i < vals.size(); i++) {
-                                        AnnotationValue values = vals.get(i);
-                                        int index = i;
-                                        StatementHandle statementHandle = values.accept(new BaseAnnotationValueVisitor<StatementHandle, Object>() {
-                                            @Override
-                                            public StatementHandle visitAnnotation(AnnotationMirror a, Object object) {
-                                                return new StatementHandle(a, index);
-                                            }
-                                        }, null);
-                                        list.add(statementHandle);
-                                    }
-                                    return list;
+                            statementHandles = annotationValue.accept(GetAnnotationValueVisitor.visitArray(vals -> {
+                                List<StatementHandle> list = new ArrayList<>();
+                                for (int i = 0; i < vals.size(); i++) {
+                                    AnnotationValue values = vals.get(i);
+                                    int index = i;
+                                    StatementHandle statementHandle = values.accept(GetAnnotationValueVisitor.visitAnnotation(a -> new StatementHandle(a, index)), null);
+                                    list.add(statementHandle);
                                 }
-                            }, null);
+                                return list;
+                            }), null);
                         } else if ("numberType".equals(name)) {
                             numberTypeElement = executableElement;
-                            numberType = annotationValue.accept(new BaseAnnotationValueVisitor<NumberType, Object>() {
-                                @Override
-                                public NumberType visitEnumConstant(VariableElement c, Object object) {
-                                    return NumberType.valueOf(c.getSimpleName().toString());
-                                }
-                            }, null);
+                            numberType = annotationValue.accept(GetAnnotationValueVisitor.visitEnum(NumberType.class), null);
                         } else if ("doc".equals(name)) {
                             docElement = executableElement;
-                            docType = annotationValue.accept(new BaseAnnotationValueVisitor<DocType, Object>() {
-                                @Override
-                                public DocType visitEnumConstant(VariableElement c, Object object) {
-                                    return DocType.valueOf(c.getSimpleName().toString());
-                                }
-                            }, null);
+                            docType = annotationValue.accept(GetAnnotationValueVisitor.visitEnum(DocType.class), null);
                         } else if ("pares".equals(name)) {
                             parseElement = executableElement;
-                            parse = annotationValue.accept(new BaseAnnotationValueVisitor<Boolean, Object>() {
-                                @Override
-                                public Boolean visitBoolean(boolean b, Object object) {
-                                    return b;
-                                }
-                            }, null);
+                            parse = annotationValue.accept(GetAnnotationValueVisitor.visitBoolean(), null);
                         }
                     } catch (ElementException e) {
                         throw e;
